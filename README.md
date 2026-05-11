@@ -13,8 +13,8 @@ ISMS-P (한국 정보보호 및 개인정보보호 관리체계) 인증 사전 �
 
 Claude Code 에서 ISMS-P 점검을 트리거하면 `<프로젝트 루트>/.isms-audit/` 아래 두 파일이 생성됩니다:
 
-- **`reports/<timestamp>.md`** — 사람이 읽는 점검 보고서 (Markdown)
-- **`runs/<timestamp>.json`** — 보고서의 원본 데이터 (JSON 매니페스트)
+- **`reports/<timestamp>.md`** — 점검 리포트 결과 (Markdown)
+- **`runs/<timestamp>.json`** — 리포트의 원본 데이터 (JSON 매니페스트)
 
 ---
 
