@@ -1,0 +1,95 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "sst",
+    "name": "SST (Serverless Stack)",
+    "category": "iac",
+    "vendor": "SST Dev Inc.",
+    "homepage": "https://sst.dev",
+    "isms_p_relevance": ["2.5.5", "2.6.1", "2.7.2"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "sst.config.ts" },
+      { "type": "file_exists", "pattern": "sst.config.js" },
+      { "type": "file_exists", "pattern": "sst.config.mjs" },
+      { "type": "file_exists", "pattern": "sst.json" },
+      { "type": "file_exists", "pattern": "**/sst.config.ts" },
+      { "type": "file_exists", "pattern": "**/sst.config.js" },
+      { "type": "file_exists", "pattern": "**/sst.config.mjs" },
+      { "type": "package_dependency", "name": "sst" },
+      { "type": "package_dependency", "name": "@serverless-stack/cli" },
+      { "type": "package_dependency", "name": "@serverless-stack/resources" }
+    ],
+    "version_capture": {
+      "from": "package.json",
+      "key": "dependencies.sst"
+    }
+  },
+  "signals": [
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.6.1"],
+      "family": "sst_bucket_public",
+      "required": false,
+      "description": "SST Bucket access:'public' 부재 (의도적 공개 어셋이면 화이트리스트 필요)",
+      "pattern": "access:\\s*['\"]public['\"]",
+      "paths": ["**/sst.config.{ts,js,mjs}", "**/*.sst.{ts,js,mjs}"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.6.1"],
+      "family": "lambda_url_no_auth",
+      "required": true,
+      "description": "Lambda Function URL / API Gateway authType=NONE (인증 없음) 부재",
+      "pattern": "authType:\\s*['\"]NONE['\"]|noAuth\\s*:\\s*true",
+      "paths": ["**/sst.config.{ts,js,mjs}", "**/*.sst.{ts,js,mjs}", "**/lib/*-stack.{ts,js}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.5.5"],
+      "family": "iac_inline_iam",
+      "required": false,
+      "description": "SST/CDK permissions: [] 직접 부여 (인라인 IAM) — 검토 권장 시그널",
+      "pattern": "permissions:\\s*\\[",
+      "paths": ["**/sst.config.{ts,js,mjs}", "**/lib/*-stack.{ts,js}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.6.1", "2.5.5"],
+      "family": "sst_function_url_unauthenticated",
+      "required": true,
+      "description": "sst.aws.Function 의 url: 옵션이 활성화되어 있으나 url.authorization 또는 authType 명시 부재 — Function URL 무인증 노출 위험",
+      "pattern": "url\\s*:\\s*(true|\\{(?![^}]*authorization)(?![^}]*authType))",
+      "paths": ["**/sst.config.{ts,js,mjs}", "**/*.sst.{ts,js,mjs}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "sst_secret_inline",
+      "required": false,
+      "description": "SST Secret 객체가 아닌 평문 환경변수 형태로 시크릿 주입 의심 (sst.config 내 environment: { SECRET_*: '...' } 형태)",
+      "pattern": "environment\\s*:\\s*\\{[^}]*(SECRET|API_KEY|TOKEN|PASSWORD)[^}]*['\"][A-Za-z0-9_/+=\\-]{12,}['\"]",
+      "paths": ["**/sst.config.{ts,js,mjs}", "**/*.sst.{ts,js,mjs}"]
+    }
+  ],
+  "capabilities": {
+    "network_isolation": {
+      "no_public_s3": ["sst_bucket_public"]
+    },
+    "application_access_control": {
+      "function_url_authenticated": ["lambda_url_no_auth", "sst_function_url_unauthenticated"]
+    },
+    "access_control": {
+      "inline_iam_review": ["iac_inline_iam"]
+    },
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["sst_secret_inline"]
+    }
+  }
+}

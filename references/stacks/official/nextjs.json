@@ -1,0 +1,85 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "nextjs",
+    "name": "Next.js",
+    "category": "framework-fe",
+    "vendor": "Vercel Inc.",
+    "homepage": "https://nextjs.org",
+    "isms_p_relevance": ["2.10.1", "2.10.4", "2.6.3"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "**/next.config.js" },
+      { "type": "file_exists", "pattern": "**/next.config.ts" },
+      { "type": "file_exists", "pattern": "**/next.config.mjs" },
+      { "type": "package_dependency", "name": "next" }
+    ],
+    "version_capture": {
+      "from": "package.json",
+      "key": "dependencies.next"
+    }
+  },
+  "signals": [
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.10.1", "2.10.4"],
+      "family": "web_security_headers",
+      "required": false,
+      "description": "웹 보안 응답 헤더(CSP/HSTS/XFO/Referrer-Policy) 설정 — next.config 의 headers() 또는 middleware 에서 응답 헤더 강제",
+      "pattern": "Strict-Transport-Security|Content-Security-Policy|X-Frame-Options|X-Content-Type-Options|Referrer-Policy",
+      "paths": ["**/next.config.{js,ts,mjs}", "**/middleware.{js,ts}", "**/server/**", "**/express/**"]
+    },
+    {
+      "type": "glob_exists",
+      "access_tier": 0,
+      "controls": ["2.6.3"],
+      "family": "nextjs_middleware_present",
+      "required": false,
+      "description": "Next.js middleware.ts 존재 — 인증/권한 가드 또는 요청 검증 layer 인지 (있어야 좋음)",
+      "pattern": "**/middleware.{ts,js}"
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.6.3"],
+      "family": "nextjs_server_only_guard",
+      "required": false,
+      "description": "import 'server-only' 또는 'use server' 가드 사용 — 서버 코드의 클라이언트 누설 방지",
+      "pattern": "import\\s+['\"]server-only['\"]|^['\"]use server['\"]",
+      "paths": ["**/*.{ts,tsx,js,jsx}"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.10.1"],
+      "family": "nextjs_powered_by_header",
+      "required": false,
+      "description": "X-Powered-By 헤더 비활성화 (poweredByHeader: false) 명시 — 명시 안 되어 있으면 default true 로 정보 노출",
+      "pattern": "poweredByHeader\\s*:\\s*true",
+      "paths": ["**/next.config.{js,ts,mjs}"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.10.1"],
+      "family": "nextjs_unsafe_eval_csp",
+      "required": false,
+      "description": "CSP 헤더에 'unsafe-eval' / 'unsafe-inline' 부재 권장",
+      "pattern": "Content-Security-Policy[^,}]*['\"][^'\"]*'unsafe-(eval|inline)'",
+      "paths": ["**/next.config.{js,ts,mjs}", "**/middleware.{js,ts}"]
+    }
+  ],
+  "capabilities": {
+    "application_access_control": {
+      "middleware_present": ["nextjs_middleware_present"]
+    },
+    "web_security": {
+      "security_headers_present": ["web_security_headers"],
+      "powered_by_header_disabled": ["nextjs_powered_by_header"],
+      "csp_no_unsafe_directive": ["nextjs_unsafe_eval_csp"],
+      "server_only_guard": ["nextjs_server_only_guard"]
+    }
+  }
+}

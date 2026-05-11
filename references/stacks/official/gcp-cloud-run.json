@@ -1,0 +1,105 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "gcp-cloud-run",
+    "name": "Google Cloud Run",
+    "category": "hosting",
+    "vendor": "Google LLC",
+    "homepage": "https://cloud.google.com/run",
+    "data_region_note": "Cloud Run 기본 리전 명시 권장. asia-northeast3 (서울) 사용 권장. us-central1 등 미국 리전 사용 시 ISMS-P 3.3.4 국외이전 통제 적용 대상.",
+    "isms_p_relevance": ["2.6.1", "2.6.2", "2.6.3", "2.7.1", "2.7.2", "3.3.4"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "cloudbuild.yaml" },
+      { "type": "file_exists", "pattern": "cloudbuild.yml" },
+      { "type": "file_exists", "pattern": "**/cloudbuild.yaml" },
+      { "type": "file_exists", "pattern": "service.yaml" },
+      { "type": "file_exists", "pattern": "**/service.yaml" },
+      { "type": "file_exists", "pattern": ".gcloudignore" },
+      { "type": "file_exists", "pattern": "**/.gcloudignore" },
+      { "type": "package_dependency", "name": "@google-cloud/run" },
+      { "type": "package_dependency", "name": "google-cloud-run" }
+    ]
+  },
+  "signals": [
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.6.3"],
+      "family": "cloud_run_unauthenticated",
+      "required": true,
+      "description": "Cloud Run 서비스 --allow-unauthenticated 또는 invoker: allUsers/allAuthenticatedUsers 사용 — 인증 없는 외부 노출 위험",
+      "pattern": "--allow-unauthenticated|allUsers|allAuthenticatedUsers",
+      "paths": ["**/cloudbuild.{yaml,yml}", "**/service.{yaml,yml}", "**/Dockerfile", "**/*.sh", "**/scripts/**"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.5.5"],
+      "family": "cloud_run_default_service_account",
+      "required": false,
+      "description": "Cloud Run 기본 컴퓨트 서비스 계정 (PROJECT_NUMBER-compute@developer.gserviceaccount.com) 사용 부재 — 최소 권한 service account 명시 권장",
+      "pattern": "-compute@developer\\.gserviceaccount\\.com",
+      "paths": ["**/cloudbuild.{yaml,yml}", "**/service.{yaml,yml}", "**/*.tf"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.4"],
+      "family": "cloud_run_region_default",
+      "required": false,
+      "description": "Cloud Run 리전 명시 부재 또는 us-central1/us-east1/asia-southeast1 등 한국 외 리전 사용 — 국외이전 검토 대상",
+      "pattern": "(?i)region\\s*[:=]\\s*['\"]?(us-central1|us-east1|us-east4|us-west1|us-west2|asia-southeast1|asia-east1|europe-west1)",
+      "paths": ["**/cloudbuild.{yaml,yml}", "**/service.{yaml,yml}", "**/*.{ts,tsx,js,jsx}"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.6.1"],
+      "family": "cloud_run_ingress_internal",
+      "required": false,
+      "description": "Cloud Run --ingress 옵션 부재 — 기본값 all (외부 노출). internal-and-cloud-load-balancing 또는 internal 권장",
+      "pattern": "--ingress|ingress:\\s*(internal|internal-and-cloud-load-balancing)",
+      "paths": ["**/cloudbuild.{yaml,yml}", "**/service.{yaml,yml}", "**/*.sh"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.6.6"],
+      "family": "cloud_run_iap_or_no_authz",
+      "required": false,
+      "description": "Cloud Run + Identity-Aware Proxy(IAP) 또는 Cloud Armor 정책 부재 — 관리자 페이지 라우팅 보호 검토",
+      "pattern": "(?i)(identity-aware-proxy|cloud-armor|backend-service.*--security-policy)",
+      "paths": ["**/cloudbuild.{yaml,yml}", "**/*.tf", "**/*.sh"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "cloud_run_inline_env_secret",
+      "required": false,
+      "description": "Cloud Run env: 또는 --set-env-vars 에 평문 시크릿 의심 (Secret Manager 사용 권장 — `--set-secrets` 패턴)",
+      "pattern": "--set-env-vars[^\\n]*=[A-Za-z0-9_/+=\\-]{20,}|env:\\s*\\n\\s*-\\s*name:\\s*(SECRET|API_KEY|TOKEN|PASSWORD)[^\\n]*\\n\\s*value:\\s*['\"][A-Za-z0-9_/+=\\-]{20,}",
+      "paths": ["**/cloudbuild.{yaml,yml}", "**/service.{yaml,yml}"]
+    }
+  ],
+  "capabilities": {
+    "application_access_control": {
+      "function_url_authenticated": ["cloud_run_unauthenticated"],
+      "app_layer_authn_present": ["cloud_run_unauthenticated", "cloud_run_iap_or_no_authz"]
+    },
+    "access_control": {
+      "metadata_service_protected": ["cloud_run_default_service_account"]
+    },
+    "network_isolation": {
+      "no_open_cidr": ["cloud_run_ingress_internal"]
+    },
+    "third_party_disclosure": {
+      "overseas_transfer_disclosure": ["cloud_run_region_default"]
+    },
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["cloud_run_inline_env_secret"]
+    }
+  }
+}

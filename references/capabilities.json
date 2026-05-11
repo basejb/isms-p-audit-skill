@@ -1,0 +1,1505 @@
+{
+  "schema_version": "1",
+  "isms_p_version": "2023.11",
+  "last_verified": "2026-05-10",
+  "description": "Capability 카탈로그 v0.4 단계 1+2+3 시드. 스택 무관 보안 능력을 ISMS-P 통제와 controls.json/stacks 의 시그널 family 사이 중간 계층으로 정의한다. 단계 1 의 17개 + 단계 2 신설 5개 (governance, change_management, backup_recovery, patch_management, web_security) + 단계 3 신설 1개 (payment_integrity) = 총 23개. 단계 3 에서 stack profile family 매핑을 위해 기존 capability 에 신규 aspect 다수 보강 (authentication.anonymous_auth_review, application_access_control.app_layer_authn_present/oauth_redirect_uri_strict, data_minimization.pii_inventory/pii_in_logs_absent, web_security 의 헤더/CSP aspect 4종 등). satisfied_by_signal_families 의 family 명은 controls.json / stacks/official/*.json 에 실제 존재하는 family 와 일치한다. v0.5.0-B 부터 각 verification_aspect 에 applicable_to[] 메타 필드 추가 — 레포 역할(frontend/backend/fullstack/infra/mobile/all)별 평가 가능성 분리 (시그널 변경 0).",
+  "capabilities": [
+    {
+      "id": "authentication",
+      "name": "사용자 인증",
+      "category": "identity",
+      "description": "비밀번호 해싱·정책·MFA 정의 등 사용자 인증 메커니즘. 강한 해시 알고리즘, 약한 해시 부재, 비밀번호 정책 IaC, MFA IaC 조건 모두 검증한다.",
+      "verification_aspects": [
+        {
+          "id": "strong_password_hashing",
+          "description": "Argon2/bcrypt/scrypt 등 강한 패스워드 해시 사용 + MD5/SHA1 등 약한 해시 부재.",
+          "satisfied_by_signal_families": [
+            "password_hash_strong",
+            "auth_weak_hash"
+          ],
+          "required": true,
+          "evidence_hint": "비밀번호 저장 시 사용된 해시 라이브러리 코드와 마이그레이션 이력.",
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "app_level_mfa_implementation",
+          "description": "애플리케이션 레벨 MFA 코드 (TOTP/SMS) 구현 흔적.",
+          "satisfied_by_signal_families": [
+            "mfa_app_code"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "iac_password_policy",
+          "description": "IaC 에 비밀번호 정책 (길이/복잡도/만료) 정의.",
+          "satisfied_by_signal_families": [
+            "password_policy_present",
+            "password_rotation_policy"
+          ],
+          "required": true,
+          "applicable_to": [
+            "backend",
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "iac_mfa_condition",
+          "description": "IaC IAM 정책에 MFA 조건 (aws:MultiFactorAuthPresent) 명시 + 누락 부재.",
+          "satisfied_by_signal_families": [
+            "mfa_iac_present",
+            "mfa_iac_missing"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "anonymous_auth_review",
+          "description": "Firebase signInAnonymously 등 익명 인증 사용 검토 — 사용자 식별 불가 시 접근통제 정책 정합성 점검.",
+          "satisfied_by_signal_families": [
+            "firebase_anonymous_auth_enabled"
+          ],
+          "required": false,
+          "applicable_to": [
+            "frontend",
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.5.3",
+        "2.5.4"
+      ]
+    },
+    {
+      "id": "mfa_enforcement",
+      "name": "MFA 강제",
+      "category": "identity",
+      "description": "콘솔/관리자 로그인 시 MFA 강제 여부. 런타임 검증 (`access_tier=2`) 과 IaC 정의 양쪽에서 확인한다.",
+      "verification_aspects": [
+        {
+          "id": "runtime_mfa_console",
+          "description": "런타임에서 콘솔 사용자 MFA 활성화 상태 확인.",
+          "satisfied_by_signal_families": [
+            "mfa_runtime"
+          ],
+          "required": true,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "iac_mfa_condition",
+          "description": "IaC 에서 MFA 조건이 IAM 정책에 명시.",
+          "satisfied_by_signal_families": [
+            "mfa_iac_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "root_account_hardening",
+          "description": "Root 계정 보호 — MFA 활성 + 액세스 키 부재 + 미사용.",
+          "satisfied_by_signal_families": [
+            "root_account_runtime"
+          ],
+          "required": true,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.5.3"
+      ]
+    },
+    {
+      "id": "account_lifecycle",
+      "name": "계정 라이프사이클",
+      "category": "identity",
+      "description": "계정 발급·회수·휴면 처리. 공용계정 부재, 휴면 액세스 키/콘솔 사용자 정리.",
+      "verification_aspects": [
+        {
+          "id": "provisioning_logic",
+          "description": "계정 발급/회수 로직 또는 자동화 흔적.",
+          "satisfied_by_signal_families": [
+            "account_lifecycle_logic"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "shared_account_absent",
+          "description": "공용/공유 계정 사용 흔적 부재.",
+          "satisfied_by_signal_families": [
+            "shared_account"
+          ],
+          "required": true,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "inactive_credentials_rotation",
+          "description": "휴면 액세스 키/콘솔 사용자 정리 (정적 + 런타임).",
+          "satisfied_by_signal_families": [
+            "stale_access_key",
+            "stale_access_key_runtime",
+            "stale_console_user_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.5.1",
+        "2.5.6"
+      ]
+    },
+    {
+      "id": "access_control",
+      "name": "권한 관리 (최소권한 / RBAC)",
+      "category": "access",
+      "description": "RBAC 데코레이터/미들웨어, IaC IAM 정의, 관리자 정책 미부여, 와일드카드 액션 부재. K8s ClusterRoleBinding 와일드카드 부재 포함.",
+      "verification_aspects": [
+        {
+          "id": "rbac_decorators",
+          "description": "애플리케이션에서 RBAC 가드/데코레이터 사용.",
+          "satisfied_by_signal_families": [
+            "rbac_usage"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "iac_iam_definition",
+          "description": "IaC 에 IAM 정책/Role 명시적 정의.",
+          "satisfied_by_signal_families": [
+            "iam_iac_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "admin_policy_not_attached",
+          "description": "AdministratorAccess / FullAccess 등 관리자 정책 부착 흔적 부재 (IaC + 런타임).",
+          "satisfied_by_signal_families": [
+            "iam_admin_attached",
+            "iam_admin_runtime",
+            "cdk_iam_admin_attached",
+            "access_analyzer_runtime"
+          ],
+          "required": true,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "wildcard_action_absent",
+          "description": "IaC IAM 정책에 Action: '*' 와일드카드 부재.",
+          "satisfied_by_signal_families": [
+            "iam_wildcard",
+            "pulumi_iam_wildcard"
+          ],
+          "required": true,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "k8s_wildcard_absent",
+          "description": "K8s ClusterRoleBinding/Role 의 와일드카드 verb/resource 부재.",
+          "satisfied_by_signal_families": [
+            "k8s_wildcard"
+          ],
+          "required": true,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "inline_iam_review",
+          "description": "CDK/Pulumi inline IAM grant 등 인라인 권한 부여 검토 (정보용).",
+          "satisfied_by_signal_families": [
+            "iac_inline_iam",
+            "cdk_inline_iam_grant"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "metadata_service_protected",
+          "description": "EC2 인스턴스 메타데이터 서비스 (IMDSv2) 강제 — 토큰 필수.",
+          "satisfied_by_signal_families": [
+            "ec2_imdsv2_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.5.5",
+        "2.6.2"
+      ]
+    },
+    {
+      "id": "application_access_control",
+      "name": "응용프로그램 접근통제",
+      "category": "access",
+      "description": "Lambda Function URL 인증, Next.js 미들웨어 등 응용 레벨 접근 통제.",
+      "verification_aspects": [
+        {
+          "id": "function_url_authenticated",
+          "description": "Lambda/SST Function URL 이 NONE 인증으로 노출되지 않음.",
+          "satisfied_by_signal_families": [
+            "lambda_url_no_auth",
+            "sst_function_url_unauthenticated",
+            "cf_workers_route_open",
+            "lambda_function_url_runtime"
+          ],
+          "required": true,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "middleware_present",
+          "description": "Next.js 등 프레임워크 미들웨어로 인증/인가 게이트 존재.",
+          "satisfied_by_signal_families": [
+            "nextjs_middleware_present",
+            "app_auth_middleware_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "frontend",
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "app_layer_authn_present",
+          "description": "RLS 미지원 데이터스토어(D1 등) 사용 시 코드 layer 인증/세션 검증 가드 존재.",
+          "satisfied_by_signal_families": [
+            "cf_d1_no_authn_layer",
+            "api_gateway_resource_policy_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "oauth_redirect_uri_strict",
+          "description": "OAuth redirect_uri 가 와일드카드/localhost 운영 사용 부재. 정확한 도메인만 등록되어야 함.",
+          "satisfied_by_signal_families": [
+            "kakao_redirect_uri_wildcard"
+          ],
+          "required": false,
+          "applicable_to": [
+            "frontend",
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.6.3",
+        "2.6.2",
+        "2.6.6"
+      ]
+    },
+    {
+      "id": "network_isolation",
+      "name": "네트워크 격리",
+      "category": "network",
+      "description": "보안 그룹 0.0.0.0/0 노출 부재, S3 퍼블릭 부재, DB 퍼블릭 부재, K8s NetworkPolicy 정의.",
+      "verification_aspects": [
+        {
+          "id": "no_open_cidr",
+          "description": "보안 그룹/방화벽에서 0.0.0.0/0 ingress 부재 (IaC + 런타임).",
+          "satisfied_by_signal_families": [
+            "network_open",
+            "cdk_open_security_group",
+            "pulumi_open_security_group",
+            "sg_ingress_runtime",
+            "ssh_open"
+          ],
+          "required": true,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "no_public_s3",
+          "description": "S3 버킷 퍼블릭 부재.",
+          "satisfied_by_signal_families": [
+            "s3_public",
+            "s3_public_runtime",
+            "cdk_s3_public",
+            "pulumi_s3_public",
+            "sst_bucket_public"
+          ],
+          "required": true,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "no_public_db",
+          "description": "RDS/DB 퍼블릭 노출 부재 + BaaS RLS/보안규칙 비활성 부재 (Supabase RLS, Firestore rules).",
+          "satisfied_by_signal_families": [
+            "db_public",
+            "rls_public_pii_table",
+            "supabase_rls_disabled_pii",
+            "firestore_rules_open",
+            "rds_public_access_runtime"
+          ],
+          "required": true,
+          "evidence_hint": "단계 2 에서 db_public_runtime 신규 family 후보로 분리 검토.",
+          "applicable_to": [
+            "backend",
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "network_policy_defined",
+          "description": "K8s NetworkPolicy 정의 (런타임 + IaC).",
+          "satisfied_by_signal_families": [
+            "network_policy_present",
+            "k8s_networkpolicy_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.6.1",
+        "2.6.4",
+        "2.6.6"
+      ]
+    },
+    {
+      "id": "internet_egress_control",
+      "name": "인터넷 접속 통제",
+      "category": "network",
+      "description": "VPC Endpoint 또는 egress allowlist 로 인터넷 접속 통제.",
+      "verification_aspects": [
+        {
+          "id": "vpc_endpoint_or_egress_proxy",
+          "description": "VPC Endpoint 사용 또는 egress 허용목록(allowlist) 정의.",
+          "satisfied_by_signal_families": [
+            "vpc_endpoint_present",
+            "egress_allowlist_present",
+            "egress_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.6.7"
+      ]
+    },
+    {
+      "id": "encryption_at_rest",
+      "name": "저장 암호화",
+      "category": "crypto",
+      "description": "KMS 키 회전, PII 컬럼 암호화, 평문 PII 컬럼 부재.",
+      "verification_aspects": [
+        {
+          "id": "kms_rotation_enabled",
+          "description": "KMS 자동 키 회전 활성화 (IaC + 런타임).",
+          "satisfied_by_signal_families": [
+            "kms_rotation_iac",
+            "kms_rotation_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "column_encryption_present",
+          "description": "PII 컬럼 암호화 적용 흔적.",
+          "satisfied_by_signal_families": [
+            "pii_column_encrypted"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "column_plaintext_absent",
+          "description": "PII 컬럼이 평문으로 저장된 패턴 부재. 패턴 매치 시 실패 (negative semantics).",
+          "satisfied_by_signal_families": [
+            "pii_column_plaintext",
+            "nicepay_card_number_stored",
+            "tosspayments_billing_key_storage",
+            "kcp_card_data_proxy"
+          ],
+          "required": true,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "database_storage_encrypted",
+          "description": "RDS / DynamoDB / EFS 등 데이터베이스·스토리지 저장 데이터의 기본 암호화 활성.",
+          "satisfied_by_signal_families": [
+            "rds_encryption_runtime",
+            "dynamodb_encryption_runtime",
+            "efs_encryption_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "ebs_encryption_default",
+          "description": "EC2 EBS 볼륨의 계정 수준 기본 암호화 활성.",
+          "satisfied_by_signal_families": [
+            "ebs_default_encryption_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "bucket_encryption_default",
+          "description": "S3 버킷의 기본 암호화 설정 (AES256 또는 aws:kms).",
+          "satisfied_by_signal_families": [
+            "s3_default_encryption_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "messaging_encryption_at_rest",
+          "description": "SNS / SQS 메시지 큐의 저장 데이터 암호화 (KMS).",
+          "satisfied_by_signal_families": [
+            "sns_sqs_encryption_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.7.2",
+        "3.2.5"
+      ]
+    },
+    {
+      "id": "encryption_in_transit",
+      "name": "전송 암호화",
+      "category": "crypto",
+      "description": "CloudFront/ALB 의 TLS 정책, TLS verify 비활성 부재, 약한 cipher 부재.",
+      "verification_aspects": [
+        {
+          "id": "cloudfront_tls_modern",
+          "description": "CloudFront viewer policy 가 TLS1.2+/HTTPS 강제.",
+          "satisfied_by_signal_families": [
+            "cloudfront_tls"
+          ],
+          "required": true,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "alb_tls_modern",
+          "description": "ALB listener 가 modern TLS 정책 사용.",
+          "satisfied_by_signal_families": [
+            "alb_tls"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "tls_verify_enabled",
+          "description": "tls.rejectUnauthorized=false / verify=False 등 TLS 검증 비활성 패턴 부재.",
+          "satisfied_by_signal_families": [
+            "tls_verify_disabled"
+          ],
+          "required": true,
+          "applicable_to": [
+            "frontend",
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "weak_cipher_absent",
+          "description": "MD5/RC4/SSLv3 등 약한 cipher 부재 + 강한 cipher 사용 흔적.",
+          "satisfied_by_signal_families": [
+            "crypto_weak",
+            "tls_weak",
+            "crypto_strong_present",
+            "tls_strong_present",
+            "transport_encryption_app",
+            "transport_encryption_iac"
+          ],
+          "required": true,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "infra",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.7.1",
+        "2.10.5"
+      ]
+    },
+    {
+      "id": "secrets_management",
+      "name": "시크릿 관리",
+      "category": "crypto",
+      "description": "KMS/Vault 사용, 하드코딩 시크릿 부재, 클라우드/SaaS 자격증명 인라인 부재.",
+      "verification_aspects": [
+        {
+          "id": "kms_or_vault_used",
+          "description": "KMS / Secrets Manager / Vault 사용 흔적.",
+          "satisfied_by_signal_families": [
+            "kms_usage",
+            "secretsmanager_rotation_runtime",
+            "ssm_parameter_securestring_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "hardcoded_secrets_absent",
+          "description": "범용 하드코딩 시크릿 패턴 부재.",
+          "satisfied_by_signal_families": [
+            "hardcoded_secret"
+          ],
+          "required": true,
+          "applicable_to": [
+            "all"
+          ]
+        },
+        {
+          "id": "cloud_credential_inline_absent",
+          "description": "CDK/Pulumi/Vercel/CF Workers/SST 및 PG·로그인·관제 SaaS 의 자격증명 인라인 부재.",
+          "satisfied_by_signal_families": [
+            "cdk_secret_inline",
+            "pulumi_secret_inline",
+            "vercel_secret_inline",
+            "cf_workers_secret_inline",
+            "sst_secret_inline",
+            "prisma_secret_in_schema",
+            "firebase_admin_sdk_inline_credentials",
+            "datadog_api_key_inline",
+            "sentry_dsn_inline",
+            "nicepay_merchant_key_inline",
+            "tosspayments_secret_key_inline",
+            "kakao_app_secret_inline",
+            "naver_client_secret_inline",
+            "kcp_site_cd_inline"
+          ],
+          "required": true,
+          "applicable_to": [
+            "backend",
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.7.2"
+      ]
+    },
+    {
+      "id": "audit_logging",
+      "name": "감사로그",
+      "category": "logging",
+      "description": "CloudTrail, S3 access log 등 감사로그 활성화.",
+      "verification_aspects": [
+        {
+          "id": "cloudtrail_runtime_enabled",
+          "description": "CloudTrail multi-region trail 활성화 (런타임).",
+          "satisfied_by_signal_families": [
+            "cloudtrail_runtime",
+            "cloudtrail_log_validation_runtime"
+          ],
+          "required": true,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "s3_access_log_enabled",
+          "description": "S3 server access logging 활성화.",
+          "satisfied_by_signal_families": [
+            "s3_access_log",
+            "access_log_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "vpc_flow_log_enabled",
+          "description": "VPC Flow Log 활성화 — 네트워크 트래픽 감사 기록.",
+          "satisfied_by_signal_families": [
+            "vpc_flow_log_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "log_storage_encrypted",
+          "description": "감사 로그 저장소 (CloudWatch LogGroup) 의 KMS 암호화.",
+          "satisfied_by_signal_families": [
+            "cloudwatch_log_encryption_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "lb_access_log_enabled",
+          "description": "로드밸런서 (ALB/NLB) access log 활성화.",
+          "satisfied_by_signal_families": [
+            "alb_access_log_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.9.4",
+        "2.9.5"
+      ]
+    },
+    {
+      "id": "log_monitoring",
+      "name": "로그 점검 / 이상행위 모니터링",
+      "category": "logging",
+      "description": "GuardDuty, CloudWatch Alarm 등 이상행위 탐지.",
+      "verification_aspects": [
+        {
+          "id": "guardduty_or_alarm",
+          "description": "GuardDuty 활성화 또는 CloudWatch Alarm 정의.",
+          "satisfied_by_signal_families": [
+            "guardduty_runtime",
+            "guardduty_findings_runtime",
+            "cloudwatch_alarm_runtime",
+            "alert_system_present",
+            "securityhub_findings_runtime",
+            "eventbridge_security_rule_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.11.3",
+        "2.9.5"
+      ]
+    },
+    {
+      "id": "data_minimization",
+      "name": "개인정보 최소수집",
+      "category": "data-protection",
+      "description": "동의 처리 로직, 민감 식별정보 (주민등록번호 등) 수집 부재.",
+      "verification_aspects": [
+        {
+          "id": "consent_logic",
+          "description": "동의 수집/저장 로직 흔적.",
+          "satisfied_by_signal_families": [
+            "consent_logic_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "frontend",
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "sensitive_id_absent",
+          "description": "주민등록번호 등 민감 식별정보 수집 패턴 부재.",
+          "satisfied_by_signal_families": [
+            "pii_sensitive_id"
+          ],
+          "required": true,
+          "applicable_to": [
+            "frontend",
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "pii_inventory",
+          "description": "PII 보유 테이블/모델/컬렉션 인벤토리 시그널 (정보용). 동의 항목과 저장 항목 정합성 검토 컨텍스트.",
+          "satisfied_by_signal_families": [
+            "pii_table_present",
+            "prisma_pii_field",
+            "firestore_pii_collection",
+            "kakao_user_data_storage",
+            "naver_user_data_storage",
+            "naver_user_email_unverified_storage"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "pii_in_logs_absent",
+          "description": "로그/모니터링 SaaS 로 전송되는 PII 부재 (로그 마스킹 또는 scrubber 적용).",
+          "satisfied_by_signal_families": [
+            "prisma_logging_query",
+            "datadog_pii_logged"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "3.1.1",
+        "3.1.2",
+        "3.2.4"
+      ]
+    },
+    {
+      "id": "data_retention",
+      "name": "보유기간 관리",
+      "category": "data-protection",
+      "description": "보유기간 정책·자동 파기 잡, 목적 종료 후 분리 보관. 단계 2 에서 archive_separation 신규 family 추가 예정.",
+      "verification_aspects": [
+        {
+          "id": "retention_policy_present",
+          "description": "로그 보유기간 / 법정 보유기간 / 목적 달성 후 파기 코드 정책 존재.",
+          "satisfied_by_signal_families": [
+            "log_retention_1y",
+            "legal_retention_doc",
+            "post_purpose_archival_code",
+            "destroy_logic_present",
+            "destroy_job_present",
+            "cloudwatch_log_retention_runtime"
+          ],
+          "required": true,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "infra",
+            "all"
+          ]
+        },
+        {
+          "id": "archive_separation",
+          "description": "목적 달성 후 분리 보관/마이그레이션 흔적. 단계 2 에서 archive_separation 신규 family 도입 후보.",
+          "satisfied_by_signal_families": [
+            "post_purpose_archival_code",
+            "post_purpose_storage_doc"
+          ],
+          "required": false,
+          "evidence_hint": "신규 family archive_separation 단계 2 도입 예정.",
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "3.4.1",
+        "3.4.2"
+      ]
+    },
+    {
+      "id": "subject_rights",
+      "name": "정보주체 권리보장",
+      "category": "data-protection",
+      "description": "개인정보 처리방침 페이지, 정보주체 권리행사 API, 정기 통지.",
+      "verification_aspects": [
+        {
+          "id": "privacy_policy_page_present",
+          "description": "개인정보 처리방침 페이지/라우트 존재.",
+          "satisfied_by_signal_families": [
+            "privacy_policy_page_present",
+            "privacy_policy_route"
+          ],
+          "required": true,
+          "applicable_to": [
+            "frontend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "rights_api_present",
+          "description": "정보주체 권리행사 (열람/정정/삭제) API 흔적.",
+          "satisfied_by_signal_families": [
+            "data_subject_rights_api"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "periodic_notice_present",
+          "description": "정기 통지 스케줄러/잡 흔적.",
+          "satisfied_by_signal_families": [
+            "periodic_notice_present",
+            "notice_scheduler_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "3.5.1",
+        "3.5.2",
+        "3.5.3"
+      ]
+    },
+    {
+      "id": "third_party_disclosure",
+      "name": "위탁/제3자 제공/국외이전",
+      "category": "compliance",
+      "description": "외부 SaaS 의존성 인벤토리, 국외이전 표시. Sentry 등의 PII 전송 포함.",
+      "verification_aspects": [
+        {
+          "id": "external_saas_inventory",
+          "description": "외부 SaaS 의존성 흔적 (위탁/제3자 제공 인벤토리).",
+          "satisfied_by_signal_families": [
+            "external_saas_dependency",
+            "outsourcing_dependency",
+            "overseas_saas_dependency"
+          ],
+          "required": false,
+          "applicable_to": [
+            "all"
+          ]
+        },
+        {
+          "id": "overseas_transfer_disclosure",
+          "description": "국외이전 고지 흔적 + Sentry/관제 SaaS 의 PII 전송 + 호스팅/리전 기본값(US/글로벌) 사용.",
+          "satisfied_by_signal_families": [
+            "overseas_transfer_disclosure",
+            "sentry_pii_transmission",
+            "datadog_pii_logged",
+            "datadog_site_us_default",
+            "vercel_function_region_default",
+            "firebase_region_default"
+          ],
+          "required": true,
+          "applicable_to": [
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "3.3.1",
+        "3.3.2",
+        "3.3.4"
+      ]
+    },
+    {
+      "id": "incident_response",
+      "name": "사고대응",
+      "category": "compliance",
+      "description": "사고대응 런북 존재. 외부 증적 (조직도/훈련 기록 등) 영역은 manual_review 로 분리.",
+      "verification_aspects": [
+        {
+          "id": "runbook_present",
+          "description": "incident response runbook 파일 존재.",
+          "satisfied_by_signal_families": [
+            "runbook_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "all"
+          ]
+        },
+        {
+          "id": "external_evidence_only",
+          "description": "사고대응 조직/훈련/사후처리는 manual_review 로 외부 증적 영역.",
+          "satisfied_by_signal_families": [
+            "incident_response_doc",
+            "incident_drill_doc",
+            "incident_org_doc",
+            "incident_response_log"
+          ],
+          "required": false,
+          "evidence_hint": "조직도, 훈련 결과 보고서, 사고 대응 보고서 등 비-코드 증적.",
+          "applicable_to": [
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.11.1",
+        "2.11.4",
+        "2.11.5"
+      ]
+    },
+    {
+      "id": "governance",
+      "name": "거버넌스 / 관리체계",
+      "category": "compliance",
+      "description": "정보자산 식별, 보안 정책 수립, 법적 요구사항 준수 등 ISMS 관리체계의 문서·운영 측면. 단계 2 에서 1.x 통제 매핑을 위해 신설.",
+      "verification_aspects": [
+        {
+          "id": "asset_inventory_documented",
+          "description": "정보자산 인벤토리 (CMDB / asset-inventory.yaml 등) 존재.",
+          "satisfied_by_signal_families": [
+            "asset_inventory_present",
+            "asset_classification_doc"
+          ],
+          "required": false,
+          "applicable_to": [
+            "all"
+          ]
+        },
+        {
+          "id": "security_policy_doc_present",
+          "description": "보안/정책 문서 (SECURITY.md, docs/security/) 존재.",
+          "satisfied_by_signal_families": [
+            "security_policy_doc",
+            "policy_governance_doc"
+          ],
+          "required": false,
+          "applicable_to": [
+            "all"
+          ]
+        },
+        {
+          "id": "license_compliance",
+          "description": "오픈소스 라이선스/법적 컴플라이언스 문서 존재.",
+          "satisfied_by_signal_families": [
+            "license_file_present",
+            "legal_compliance_doc",
+            "legal_review_doc"
+          ],
+          "required": false,
+          "applicable_to": [
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "1.1.5",
+        "1.2.1",
+        "1.4.1"
+      ]
+    },
+    {
+      "id": "change_management",
+      "name": "변경/형상 관리",
+      "category": "operations",
+      "description": "소스 형상 관리 (Git / CODEOWNERS), CI 파이프라인, 배포 승인 게이트, 릴리스 자동화. 운영환경 이관 시 영향도 평가·승인·롤백 절차의 코드/IaC 측면을 다룬다.",
+      "verification_aspects": [
+        {
+          "id": "vcs_and_codeowners",
+          "description": "Git VCS + CODEOWNERS 등 소스 관리 기본 구성.",
+          "satisfied_by_signal_families": [
+            "vcs_present",
+            "codeowners_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "all"
+          ]
+        },
+        {
+          "id": "ci_pipeline_present",
+          "description": "GitHub Actions / GitLab CI 등 CI 파이프라인 존재.",
+          "satisfied_by_signal_families": [
+            "ci_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "all"
+          ]
+        },
+        {
+          "id": "deploy_approval_gate",
+          "description": "운영 배포 워크플로 분리 + GitHub environment protection / 승인 gate.",
+          "satisfied_by_signal_families": [
+            "deploy_workflow_present",
+            "deploy_approval_gate",
+            "deploy_approval_doc"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "infra",
+            "all"
+          ]
+        },
+        {
+          "id": "changelog_and_release",
+          "description": "CHANGELOG / release-please / Changesets 등 릴리스 자동화.",
+          "satisfied_by_signal_families": [
+            "changelog_present",
+            "release_automation_present",
+            "release_tag_trigger",
+            "change_management_doc"
+          ],
+          "required": false,
+          "applicable_to": [
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.8.5",
+        "2.8.6",
+        "2.9.1"
+      ]
+    },
+    {
+      "id": "backup_recovery",
+      "name": "백업 및 복구",
+      "category": "operations",
+      "description": "백업 보관기간/스냅샷 정책, RDS Multi-AZ, AWS Backup 플랜 등 백업·DR 측면. 모의 훈련은 manual_review.",
+      "verification_aspects": [
+        {
+          "id": "backup_iac_defined",
+          "description": "백업 보관기간/스냅샷 정책 IaC 정의 (backup_retention_period 등).",
+          "satisfied_by_signal_families": [
+            "backup_iac_present",
+            "backup_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "rds_backup_runtime",
+          "description": "런타임 RDS 백업 보관기간 7일 이상 + Multi-AZ.",
+          "satisfied_by_signal_families": [
+            "rds_backup_retention_runtime",
+            "rds_backup_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "aws_backup_plan_runtime",
+          "description": "AWS Backup 플랜/복원 포인트 존재 (런타임).",
+          "satisfied_by_signal_families": [
+            "backup_recovery_points_runtime",
+            "aws_backup_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "dr_policy_documented",
+          "description": "RPO/RTO/DR 정책 명시 + 복구 모의 훈련 외부 증적.",
+          "satisfied_by_signal_families": [
+            "dr_policy_present",
+            "backup_recovery_drill_doc"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "database_high_availability",
+          "description": "RDS Multi-AZ / DynamoDB PITR 등 데이터베이스 가용성·복구 설정.",
+          "satisfied_by_signal_families": [
+            "rds_multi_az_runtime",
+            "dynamodb_pitr_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.9.3",
+        "2.12.1"
+      ]
+    },
+    {
+      "id": "patch_management",
+      "name": "패치 / 취약점 관리",
+      "category": "operations",
+      "description": "의존성 lockfile, CI 의존성 audit, OS/AMI 자동 패치 정책, 취약점 스캐너 (Snyk/Trivy/Grype). 정기 패치 SLA 는 manual_review.",
+      "verification_aspects": [
+        {
+          "id": "dependency_lockfile",
+          "description": "package-lock.json / poetry.lock / go.sum 등 의존성 lockfile 존재.",
+          "satisfied_by_signal_families": [
+            "lockfile_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "all"
+          ]
+        },
+        {
+          "id": "dependency_audit_in_ci",
+          "description": "CI 에서 npm audit / pip-audit / govulncheck 등 의존성 audit 실행.",
+          "satisfied_by_signal_families": [
+            "dep_audit_ci",
+            "dep_scan",
+            "dep_scanner_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "all"
+          ]
+        },
+        {
+          "id": "patch_baseline_iac",
+          "description": "SSM Patch Manager / 자동 업데이트 정책 IaC 정의.",
+          "satisfied_by_signal_families": [
+            "patch_baseline_present",
+            "patch_policy_doc"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "vulnerability_scanner_enabled",
+          "description": "AWS Inspector v2 + ECR scan-on-push 등 자동 취약점 스캐너 활성.",
+          "satisfied_by_signal_families": [
+            "inspector_v2_runtime",
+            "inspector_findings_runtime",
+            "ecr_scan_on_push_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.10.8",
+        "2.11.2"
+      ]
+    },
+    {
+      "id": "web_security",
+      "name": "웹/공개서버 보안",
+      "category": "network",
+      "description": "WAF, CloudFront WAF 연결, ALB WAF 연결 등 공개 웹 자산 보호 + 프레임워크/호스팅 레벨 보안 응답 헤더 (CSP/HSTS/XFO) + 정보 노출 헤더 비활성 + CSP 강도 + server-only 가드.",
+      "verification_aspects": [
+        {
+          "id": "waf_present",
+          "description": "WAF / 위협탐지 서비스 사용 흔적 (코드 또는 IaC).",
+          "satisfied_by_signal_families": [
+            "waf_present",
+            "waf_iac_present"
+          ],
+          "required": false,
+          "applicable_to": [
+            "frontend",
+            "fullstack",
+            "infra",
+            "all"
+          ]
+        },
+        {
+          "id": "cloudfront_waf_runtime",
+          "description": "런타임 모든 CloudFront 배포에 WAF 연결.",
+          "satisfied_by_signal_families": [
+            "cloudfront_waf_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "alb_waf_runtime",
+          "description": "인터넷 노출 ALB 에 WAF 연결.",
+          "satisfied_by_signal_families": [
+            "alb_waf_runtime"
+          ],
+          "required": false,
+          "applicable_to": [
+            "infra",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "security_headers_present",
+          "description": "CSP/HSTS/X-Frame-Options/X-Content-Type-Options/Referrer-Policy 등 보안 응답 헤더 설정 (Next.js / Vercel).",
+          "satisfied_by_signal_families": [
+            "web_security_headers",
+            "vercel_headers_security_missing"
+          ],
+          "required": false,
+          "applicable_to": [
+            "frontend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "powered_by_header_disabled",
+          "description": "X-Powered-By 등 정보 노출 헤더 비활성.",
+          "satisfied_by_signal_families": [
+            "nextjs_powered_by_header"
+          ],
+          "required": false,
+          "applicable_to": [
+            "frontend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "csp_no_unsafe_directive",
+          "description": "CSP 헤더에 unsafe-eval/unsafe-inline 부재.",
+          "satisfied_by_signal_families": [
+            "nextjs_unsafe_eval_csp"
+          ],
+          "required": false,
+          "applicable_to": [
+            "frontend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "server_only_guard",
+          "description": "import 'server-only' / 'use server' 가드 — 서버 코드 클라이언트 누설 방지.",
+          "satisfied_by_signal_families": [
+            "nextjs_server_only_guard"
+          ],
+          "required": false,
+          "applicable_to": [
+            "frontend",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.10.1",
+        "2.10.3",
+        "2.10.4",
+        "2.6.3"
+      ]
+    },
+    {
+      "id": "payment_integrity",
+      "name": "결제 무결성 / 콜백 검증",
+      "category": "application",
+      "description": "PG 콜백 서명 검증, 결제 confirm 시 서버 측 금액 재검증 — 결제 위변조 방지. 단계 3 에서 PG stack profile 시그널을 위해 신설.",
+      "verification_aspects": [
+        {
+          "id": "callback_signature_verified",
+          "description": "PG 승인 콜백/웹훅 처리에서 signature/HMAC 검증 호출.",
+          "satisfied_by_signal_families": [
+            "nicepay_callback_no_signature_verify"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        },
+        {
+          "id": "server_side_amount_reverify",
+          "description": "결제 confirm 시 서버에서 금액 재검증 — 클라이언트 측 amount 단독 사용 부재.",
+          "satisfied_by_signal_families": [
+            "tosspayments_widget_amount_client_only"
+          ],
+          "required": false,
+          "applicable_to": [
+            "backend",
+            "fullstack",
+            "all"
+          ]
+        }
+      ],
+      "isms_p_relevance": [
+        "2.7.1",
+        "2.10.5"
+      ]
+    }
+  ]
+}

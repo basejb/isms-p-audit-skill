@@ -1,0 +1,70 @@
+# isms-p-audit Skill v0.3+ 비대화 모드 설정 파일.
+# CI/CD 환경에서 AskUserQuestion 을 우회하려면 이 파일을 프로젝트 루트에
+# `.isms-audit.yml` 이름으로 복사하세요. 환경변수가 있으면 환경변수가 우선합니다.
+#
+# 우선순위 (SKILL.md §13.3):
+#   1. 환경변수 (ISMS_AUDIT_TIER, ISMS_AUDIT_DOMAINS, ISMS_AUDIT_AWS_PROFILE,
+#      ISMS_AUDIT_AWS_REGIONS, ISMS_AUDIT_NON_INTERACTIVE)
+#   2. 본 YAML 파일
+#   3. 대화형 AskUserQuestion (env/yaml 둘 다 없을 때)
+
+# --- 동의 범위 -----------------------------------------------------------
+# 동의할 Tier 목록. 0=정적, 1=외부도구, 2=클라우드RO, 3=런타임.
+# 환경변수: ISMS_AUDIT_TIER="0,1"
+tier: [0, 1]
+
+# 인터랙티브 모드에서는 이 필드 무시됨 — Tier 2 동의 시 자동 6개 전체.
+# 비대화 모드(non_interactive: true) 에서만 의미 있음.
+# CI/CD 환경에서 특정 도메인만 점검할 때 사용.
+# 가능 enum: iam, network, logging, crypto, backup, vuln
+# 환경변수: ISMS_AUDIT_DOMAINS="iam,network,logging"
+domains:
+  - iam
+  - network
+  - logging
+
+# --- 클라우드 공급자 (v0.6 신설, Tier 2+ 일 때만 사용) -------------------
+# 활성화할 클라우드. 부재 시 감지된 모든 클라우드 자동 사용.
+# 환경변수: ISMS_AUDIT_CLOUD_PROVIDERS="aws,gcp"
+cloud_providers: [aws]
+# 가능 값: aws, gcp, azure (멀티 가능)
+
+# --- AWS 자격증명 (cloud_providers 에 aws 포함 시) -----------------------
+# Skill 은 profile 이름·리전만 읽고 실제 키/토큰 값은 절대 보지 않음.
+# read-only IAM Role 강제 사용 권장 (SKILL.md §13.4).
+aws:
+  # 환경변수: ISMS_AUDIT_AWS_PROFILE="dev"
+  profile: dev
+  # 환경변수: ISMS_AUDIT_AWS_REGIONS="ap-northeast-2"
+  regions:
+    - ap-northeast-2
+
+# --- GCP 자격증명 (cloud_providers 에 gcp 포함 시 — v0.6 신설) -----------
+# Skill 은 project ID·region 만 읽음. service account key 값은 절대 안 봄.
+# 환경변수: ISMS_AUDIT_GCP_PROJECT, ISMS_AUDIT_GCP_REGIONS
+# gcp:
+#   project: my-prod-12345
+#   regions:
+#     - asia-northeast3
+
+# --- Azure 자격증명 (cloud_providers 에 azure 포함 시 — v0.6 신설) -------
+# Skill 은 subscription ID·location 만 읽음. credentials secret 절대 안 봄.
+# 환경변수: ISMS_AUDIT_AZURE_SUBSCRIPTION_ID, ISMS_AUDIT_AZURE_LOCATIONS
+# azure:
+#   subscription_id: 12345678-1234-1234-1234-123456789012
+#   locations:
+#     - koreacentral
+
+# --- 대화형 우회 ---------------------------------------------------------
+# true 면 AskUserQuestion 2개 (Tier / AWS 자격증명) 모두 skip 하고
+# 위에서 명시한 값으로 즉시 실행. CI/CD 에 필수.
+# (v0.4.6.1: 도메인 multi-select 는 폐지 — 인터랙티브는 6개 전체, yaml 만 부분 가능)
+# 환경변수: ISMS_AUDIT_NON_INTERACTIVE="true"
+non_interactive: true
+
+# --- 보고서·매니페스트 저장 위치 (선택) ----------------------------------
+# default: ./.isms-audit/runs/{ts}.json + ./.isms-audit/reports/{ts}.md
+# (scripts/init-gitignore.sh 가 디렉터리·.gitignore 자동 생성)
+output:
+  manifest_dir: .isms-audit/runs
+  report_dir:   .isms-audit/reports

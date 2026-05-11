@@ -1,0 +1,115 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "gcp-cloud-sql",
+    "name": "Google Cloud SQL",
+    "category": "baas-db",
+    "vendor": "Google LLC",
+    "homepage": "https://cloud.google.com/sql",
+    "data_region_note": "Cloud SQL 인스턴스 리전 명시 권장. asia-northeast3 (서울) 사용 권장. us-central1 등 미국 리전 사용 시 ISMS-P 3.3.4 국외이전 통제 적용 대상.",
+    "isms_p_relevance": ["2.5.3", "2.6.4", "2.7.1", "2.7.2", "3.3.4"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "package_dependency", "name": "@google-cloud/sql" },
+      { "type": "package_dependency", "name": "@google-cloud/cloud-sql-connector" },
+      { "type": "package_dependency", "name": "google-cloud-sql" },
+      { "type": "package_dependency", "name": "cloud-sql-connector-go" },
+      { "type": "file_exists", "pattern": "cloud-sql-proxy" },
+      { "type": "file_exists", "pattern": "**/cloud-sql-proxy" },
+      { "type": "file_exists", "pattern": "**/cloud_sql_proxy" }
+    ]
+  },
+  "signals": [
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.6.4"],
+      "family": "cloudsql_public_ip_iac",
+      "required": true,
+      "description": "Cloud SQL 인스턴스 ipv4_enabled = true 또는 ipConfiguration.ipv4Enabled: true — 외부 노출 위험",
+      "pattern": "ipv4[_-]?enabled\\s*[:=]\\s*true|ipv4Enabled:\\s*true",
+      "paths": ["**/*.{tf,tfvars}", "**/cloudbuild.{yaml,yml}", "**/*.{yaml,yml}"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.6.4"],
+      "family": "cloudsql_private_ip_required",
+      "required": false,
+      "description": "Cloud SQL private IP 설정 (private_network) 부재 — VPC 내 접근 권장",
+      "pattern": "private[_-]?network|privateNetwork",
+      "paths": ["**/*.{tf,tfvars}", "**/cloudbuild.{yaml,yml}", "**/*.{yaml,yml}"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.7.1"],
+      "family": "cloudsql_ssl_required",
+      "required": true,
+      "description": "Cloud SQL require_ssl = true 또는 ssl_mode = ENCRYPTED_ONLY 설정 부재 — 미암호화 연결 허용",
+      "pattern": "require[_-]?ssl\\s*[:=]\\s*true|sslMode\\s*[:=]\\s*['\"]?ENCRYPTED_ONLY|TRUSTED_CLIENT_CERTIFICATE_REQUIRED",
+      "paths": ["**/*.{tf,tfvars}", "**/cloudbuild.{yaml,yml}", "**/*.{yaml,yml}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.5.3"],
+      "family": "cloudsql_default_user",
+      "required": false,
+      "description": "Cloud SQL connection 에 root / postgres / sa / admin 등 기본 관리자 계정 사용 의심 — IAM 인증 또는 별도 사용자 권장",
+      "pattern": "(?i)user\\s*[:=]\\s*['\"]?(root|postgres|sa|admin)['\"]?(?![a-zA-Z0-9_])",
+      "paths": ["**/*.{ts,tsx,js,jsx,py,go,java}", "**/*.{env,env.local}", "!**/*.example.*"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "cloudsql_inline_password",
+      "required": true,
+      "description": "Cloud SQL connection string 에 평문 비밀번호 의심 (`password=...` 또는 `://user:password@`)",
+      "pattern": "(?i)cloudsql.*password\\s*[:=]\\s*['\"]?[A-Za-z0-9_@!$#%^&*()+=\\-]{6,}|postgres://[^:]+:[^@]+@[a-z0-9.-]+/.*cloudsql",
+      "paths": ["**/*.{ts,tsx,js,jsx,py,go,java}", "**/*.{env,env.local}", "!**/*.example.*"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.4"],
+      "family": "cloudsql_region_default",
+      "required": false,
+      "description": "Cloud SQL 인스턴스 region 명시 부재 또는 us-central1 등 한국 외 리전 — 국외이전 검토 대상",
+      "pattern": "(?i)region\\s*[:=]\\s*['\"]?(us-central1|us-east1|us-east4|us-west1|us-west2|asia-southeast1|asia-east1|europe-west1)",
+      "paths": ["**/*.{tf,tfvars}", "**/cloudbuild.{yaml,yml}", "**/*.{yaml,yml}"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.12.1"],
+      "family": "cloudsql_backup_config_present",
+      "required": false,
+      "description": "Cloud SQL backup_configuration 명시 부재 — 자동 백업 활성 + 보관 기간 설정 권장",
+      "pattern": "backup[_-]?configuration|backupConfiguration",
+      "paths": ["**/*.{tf,tfvars}"]
+    }
+  ],
+  "capabilities": {
+    "network_isolation": {
+      "no_public_db": ["cloudsql_public_ip_iac", "cloudsql_private_ip_required"]
+    },
+    "encryption_in_transit": {
+      "tls_verify_enabled": ["cloudsql_ssl_required"]
+    },
+    "authentication": {
+      "strong_password_hashing": ["cloudsql_default_user"]
+    },
+    "secrets_management": {
+      "hardcoded_secrets_absent": ["cloudsql_inline_password"]
+    },
+    "third_party_disclosure": {
+      "overseas_transfer_disclosure": ["cloudsql_region_default"]
+    },
+    "backup_recovery": {
+      "backup_iac_defined": ["cloudsql_backup_config_present"]
+    }
+  }
+}

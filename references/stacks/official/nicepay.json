@@ -1,0 +1,76 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "nicepay",
+    "name": "NICE Payments (나이스페이먼츠)",
+    "category": "payment",
+    "vendor": "NICE 페이먼츠",
+    "homepage": "https://www.nicepay.co.kr",
+    "data_region_note": "NICE 페이먼츠는 국내 PG. 카드/계좌 결제 정보는 PG가 PCI-DSS 환경에서 처리하므로 자체 저장 금지. ISMS-P 3.3.2 위탁업무 통지·계약 의무 적용 대상.",
+    "isms_p_relevance": ["2.7.2", "3.2.5", "3.3.2", "2.7.1"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "package_dependency", "name": "nicepay" },
+      { "type": "package_dependency", "name": "@nicepay/server-sdk" },
+      { "type": "grep_pattern", "pattern": "(service|api|sandbox-api|pay|stg-api)\\.nicepay\\.co\\.kr", "paths": ["**/*.{ts,tsx,js,jsx,py,java,kt}"] },
+      { "type": "grep_pattern", "pattern": "AUTHNICE\\.requestPay|window\\.AUTHNICE", "paths": ["**/*.{ts,tsx,js,jsx}"] }
+    ]
+  },
+  "signals": [
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "nicepay_merchant_key_inline",
+      "required": true,
+      "description": "NICE Pay 가맹점 식별값(MID/MerchantID/secret key) 평문 코드 내 하드코딩 부재 — 환경변수 사용 필수",
+      "pattern": "(?i)\\b(MID|MERCHANT_?ID|MERCHANTKEY|NICEPAY_?SECRET)\\s*[:=]\\s*['\"][a-zA-Z0-9_-]{4,}['\"]",
+      "paths": ["**/*.{ts,tsx,js,jsx,py,java,kt}", "!**/*.example.*", "!**/*.env.example"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["3.2.5"],
+      "family": "nicepay_card_number_stored",
+      "required": true,
+      "description": "DB 스키마에 카드번호/카드정보 컬럼 부재 — PCI-DSS 환경의 PG(NICE) 가 처리해야 함. 자체 저장 시 critical",
+      "pattern": "(?i)\\b(card_?number|card_?no|cardnum|card_?pan|cvv|cvc|card_?cvv)\\b\\s+(text|varchar|char|String)",
+      "paths": ["**/*.sql", "**/migrations/**", "**/schema.prisma"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.1"],
+      "family": "nicepay_callback_no_signature_verify",
+      "required": false,
+      "description": "NICE Pay 승인 콜백/웹훅 처리 라우트에서 signature/HMAC 검증 호출 — 부재 시 콜백 위변조 위험",
+      "pattern": "(?i)(verifySignature|verify_signature|verifyNicepaySignature|hmac\\.[a-z]+\\(.*verify|crypto\\.timingSafeEqual)",
+      "paths": ["**/api/payments/nicepay/**/*.{ts,js}", "**/payments/**/*.{ts,js,py}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.2"],
+      "family": "external_saas_dependency",
+      "required": false,
+      "description": "NICE Pay 위탁 인지 — 처리방침 위탁 매트릭스 및 결제정보 위탁사항 명시 필요",
+      "pattern": "(?i)nicepay\\.co\\.kr|AUTHNICE|process\\.env\\.NICEPAY_|@nicepay/",
+      "paths": ["**/*.{ts,tsx,js,jsx,py}", "**/package.json"]
+    }
+  ],
+  "capabilities": {
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["nicepay_merchant_key_inline"]
+    },
+    "encryption_at_rest": {
+      "column_plaintext_absent": ["nicepay_card_number_stored"]
+    },
+    "payment_integrity": {
+      "callback_signature_verified": ["nicepay_callback_no_signature_verify"]
+    },
+    "third_party_disclosure": {
+      "external_saas_inventory": ["external_saas_dependency"]
+    }
+  }
+}

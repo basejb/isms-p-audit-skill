@@ -1,0 +1,73 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "naver-login",
+    "name": "Naver Login (네이버 로그인)",
+    "category": "auth",
+    "vendor": "Naver",
+    "homepage": "https://developers.naver.com",
+    "data_region_note": "네이버는 국내 사업자 — 한국 내 처리. 단, 네이버 사용자정보 위탁 발생 시 ISMS-P 3.3.2 위탁업무 통지 의무 적용. 이메일 verified 여부와 저장 정책 정합성 검토 필요.",
+    "isms_p_relevance": ["2.7.2", "3.1.1", "3.3.2"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "package_dependency", "name": "react-naver-login" },
+      { "type": "package_dependency", "name": "@react-native-seoul/naver-login" },
+      { "type": "grep_pattern", "pattern": "nid\\.naver\\.com|openapi\\.naver\\.com/v1/nid", "paths": ["**/*.{ts,tsx,js,jsx,py,java,kt}"] },
+      { "type": "grep_pattern", "pattern": "(?i)NaverProvider\\(|provider\\s*:\\s*['\"]naver['\"]", "paths": ["**/*.{ts,tsx,js,jsx}"] }
+    ]
+  },
+  "signals": [
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "naver_client_secret_inline",
+      "required": true,
+      "description": "Naver Client Secret 평문 코드 내 하드코딩 부재 — 환경변수 사용 필수",
+      "pattern": "(?i)\\b(NAVER_CLIENT_SECRET|naverClientSecret)\\s*[:=]\\s*['\"][a-zA-Z0-9]{8,}['\"]",
+      "paths": ["**/*.{ts,tsx,js,jsx,py,java,kt}", "!**/*.example.*", "!**/*.env.example"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.2.5"],
+      "family": "naver_user_email_unverified_storage",
+      "required": false,
+      "description": "Naver 응답의 verified=false 이메일을 그대로 저장하는 경우 의심 — 미인증 이메일은 본인확인 수단 부적합",
+      "pattern": "(?i)response\\.email|profile\\.email|naverProfile\\.[a-z_]+",
+      "paths": ["**/*.{ts,tsx,js,jsx,py}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.1.1"],
+      "family": "naver_user_data_storage",
+      "required": false,
+      "description": "Naver 사용자 정보 (email/name/birthday/gender/age/mobile) 저장 — 동의 항목과 저장 항목 정합성 검토 필요",
+      "pattern": "(?i)\\b(birthday|birthyear|gender|age|mobile|nickname|profile_image)\\b\\s*[:=]\\s*(response|profile|naverProfile)",
+      "paths": ["**/*.{ts,tsx,js,jsx,py}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.2"],
+      "family": "external_saas_dependency",
+      "required": false,
+      "description": "Naver 로그인 위탁 인지 — 처리방침 위탁 매트릭스 및 네이버 동의 항목 명시 필요",
+      "pattern": "(?i)naver\\.com|NaverProvider|process\\.env\\.NAVER_",
+      "paths": ["**/*.{ts,tsx,js,jsx,py}", "**/package.json"]
+    }
+  ],
+  "capabilities": {
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["naver_client_secret_inline"]
+    },
+    "data_minimization": {
+      "pii_inventory": ["naver_user_data_storage", "naver_user_email_unverified_storage"]
+    },
+    "third_party_disclosure": {
+      "external_saas_inventory": ["external_saas_dependency"]
+    }
+  }
+}

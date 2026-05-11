@@ -1,0 +1,77 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "kakao-login",
+    "name": "Kakao Login (카카오 로그인)",
+    "category": "auth",
+    "vendor": "Kakao",
+    "homepage": "https://developers.kakao.com",
+    "data_region_note": "카카오는 국내 사업자 — 한국 내 처리. 단, 카카오 사용자정보 위탁(이메일/닉네임/프로필이미지 등) 발생 시 ISMS-P 3.3.2 위탁업무 통지 의무 적용. 동의 항목과 저장 항목 정합성 검토 필요.",
+    "isms_p_relevance": ["2.7.2", "3.1.1", "3.3.2"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "package_dependency", "name": "@react-native-seoul/kakao-login" },
+      { "type": "package_dependency", "name": "react-kakao-login" },
+      { "type": "package_dependency", "name": "kakao-login" },
+      { "type": "grep_pattern", "pattern": "kauth\\.kakao\\.com|kapi\\.kakao\\.com|developers\\.kakao\\.com/oauth", "paths": ["**/*.{ts,tsx,js,jsx,py,java,kt}"] },
+      { "type": "grep_pattern", "pattern": "(?i)KakaoProvider\\(|provider\\s*:\\s*['\"]kakao['\"]", "paths": ["**/*.{ts,tsx,js,jsx}"] }
+    ]
+  },
+  "signals": [
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "kakao_app_secret_inline",
+      "required": true,
+      "description": "Kakao Admin Key / Client Secret 평문 코드 내 하드코딩 부재 — 환경변수 사용 필수",
+      "pattern": "(?i)\\b(KAKAO_ADMIN_?KEY|KAKAO_CLIENT_SECRET|kakaoAdminKey|kakaoClientSecret)\\s*[:=]\\s*['\"][a-zA-Z0-9]{16,}['\"]",
+      "paths": ["**/*.{ts,tsx,js,jsx,py,java,kt}", "!**/*.example.*", "!**/*.env.example"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.1.1"],
+      "family": "kakao_user_data_storage",
+      "required": false,
+      "description": "Kakao 사용자 정보(profile/email/age_range/birthday/gender) 저장 — 동의 항목과 저장 항목 정합성 검토 필요",
+      "pattern": "(?i)kakao_account\\.(email|age_range|birthday|gender|phone_number)|properties\\.(nickname|profile_image|thumbnail_image)",
+      "paths": ["**/*.{ts,tsx,js,jsx,py}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.6.6"],
+      "family": "kakao_redirect_uri_wildcard",
+      "required": false,
+      "description": "Kakao OAuth redirect_uri 와일드카드/localhost 운영 사용 의심 — 운영 환경에서는 정확한 도메인 등록 필요",
+      "pattern": "(?i)redirect_uri\\s*[:=]\\s*['\"][^'\"]*(localhost|\\*|0\\.0\\.0\\.0)",
+      "paths": ["**/*.{ts,tsx,js,jsx,py}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.2"],
+      "family": "external_saas_dependency",
+      "required": false,
+      "description": "Kakao 로그인 위탁 인지 — 처리방침 위탁 매트릭스 및 카카오 동의 항목 명시 필요",
+      "pattern": "(?i)kakao\\.com|kakao_account|KakaoProvider|process\\.env\\.KAKAO_",
+      "paths": ["**/*.{ts,tsx,js,jsx,py}", "**/package.json"]
+    }
+  ],
+  "capabilities": {
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["kakao_app_secret_inline"]
+    },
+    "data_minimization": {
+      "pii_inventory": ["kakao_user_data_storage"]
+    },
+    "application_access_control": {
+      "oauth_redirect_uri_strict": ["kakao_redirect_uri_wildcard"]
+    },
+    "third_party_disclosure": {
+      "external_saas_inventory": ["external_saas_dependency"]
+    }
+  }
+}

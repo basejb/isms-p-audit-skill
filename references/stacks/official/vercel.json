@@ -1,0 +1,83 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "vercel",
+    "name": "Vercel",
+    "category": "hosting",
+    "vendor": "Vercel Inc.",
+    "homepage": "https://vercel.com",
+    "data_region_note": "Vercel Edge Network 는 글로벌 분산 — 한국 사용자 데이터가 해외 region 경유 가능. functions.regions / edge config 명시 권장. 처리방침 국외이전(3.3.4) 명시 권장.",
+    "isms_p_relevance": ["2.7.2", "2.10.1", "3.3.4"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "vercel.json" },
+      { "type": "file_exists", "pattern": "**/vercel.json" },
+      { "type": "file_exists", "pattern": ".vercel/project.json" },
+      { "type": "package_dependency", "name": "vercel" },
+      { "type": "package_dependency", "name": "@vercel/analytics" },
+      { "type": "package_dependency", "name": "@vercel/edge" },
+      { "type": "package_dependency", "name": "@vercel/blob" },
+      { "type": "package_dependency", "name": "@vercel/postgres" },
+      { "type": "package_dependency", "name": "@vercel/kv" }
+    ],
+    "version_capture": {
+      "from": "package.json",
+      "key": "dependencies.vercel"
+    }
+  },
+  "signals": [
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "vercel_secret_inline",
+      "required": true,
+      "description": "vercel.json 의 env / build.env 안에 평문 시크릿 의심 — 12자 이상 영숫자 키. Vercel Encrypted Environment Variables 사용 권장",
+      "pattern": "['\"](env|build\\.env)['\"]\\s*:\\s*\\{[^}]*['\"](SECRET|API_KEY|TOKEN|PASSWORD|PRIVATE_KEY)[A-Z_]*['\"]\\s*:\\s*['\"][A-Za-z0-9_/+=\\-]{12,}['\"]",
+      "paths": ["**/vercel.json"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.10.1"],
+      "family": "vercel_headers_security_missing",
+      "required": false,
+      "description": "vercel.json headers 에 CSP/HSTS/X-Frame-Options/Referrer-Policy 등 보안 응답 헤더 부재",
+      "pattern": "Strict-Transport-Security|Content-Security-Policy|X-Frame-Options|X-Content-Type-Options|Referrer-Policy",
+      "paths": ["**/vercel.json"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.4"],
+      "family": "vercel_function_region_default",
+      "required": false,
+      "description": "Vercel functions/regions 가 'all' 글로벌 또는 한국 외 region 명시 — 한국 사용자 데이터의 해외 region 경유 가능성, 국외이전 검토 대상",
+      "pattern": "regions\\s*:\\s*\\[\\s*['\"]all['\"]\\s*\\]|regions\\s*:\\s*\\[[^\\]]*['\"](iad1|sfo1|cdg1|fra1|hnd1|sin1|syd1|gru1)['\"]",
+      "paths": ["**/vercel.json", "**/next.config.{js,ts,mjs}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.4", "3.1.1"],
+      "family": "external_saas_dependency",
+      "required": false,
+      "description": "외부 SaaS (Vercel 호스팅) 위탁 인지 — 처리방침 위탁 매트릭스 및 국외이전 항목 명시 필요",
+      "pattern": "@vercel/|vercel\\.app|VERCEL_URL|process\\.env\\.VERCEL_",
+      "paths": ["**/*.{ts,tsx,js,jsx}", "**/package.json"]
+    }
+  ],
+  "capabilities": {
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["vercel_secret_inline"]
+    },
+    "web_security": {
+      "security_headers_present": ["vercel_headers_security_missing"]
+    },
+    "third_party_disclosure": {
+      "external_saas_inventory": ["external_saas_dependency"],
+      "overseas_transfer_disclosure": ["vercel_function_region_default"]
+    }
+  }
+}

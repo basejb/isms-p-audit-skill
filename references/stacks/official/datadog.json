@@ -1,0 +1,82 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "datadog",
+    "name": "Datadog",
+    "category": "external-saas",
+    "vendor": "Datadog, Inc.",
+    "homepage": "https://www.datadoghq.com",
+    "data_region_note": "Datadog 기본 리전 = US (datadoghq.com). 한국 사용자 PII/로그 전송 시 ISMS-P 3.3.4 국외이전 통제 적용 대상. EU(datadoghq.eu) 또는 AP1 리전 사용 시 별도 검토.",
+    "isms_p_relevance": ["3.1.1", "3.3.4", "2.7.2"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "package_dependency", "name": "dd-trace" },
+      { "type": "package_dependency", "name": "@datadog/browser-rum" },
+      { "type": "package_dependency", "name": "@datadog/browser-logs" },
+      { "type": "package_dependency", "name": "datadog-lambda-js" },
+      { "type": "package_dependency", "name": "datadog-cdk-constructs" },
+      { "type": "package_dependency", "name": "datadog-cdk-constructs-v2" },
+      { "type": "file_exists", "pattern": "datadog.yaml" },
+      { "type": "file_exists", "pattern": "**/datadog.yaml" }
+    ],
+    "version_capture": {
+      "from": "package.json",
+      "key": "dependencies.dd-trace"
+    }
+  },
+  "signals": [
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "datadog_api_key_inline",
+      "required": true,
+      "description": "Datadog API Key 평문 코드 내 하드코딩 부재 — DD_API_KEY 32자 hex 패턴",
+      "pattern": "DD_API_KEY\\s*[:=]\\s*['\"][a-f0-9]{32}['\"]|datadogApiKey\\s*[:=]\\s*['\"][a-f0-9]{32}['\"]",
+      "paths": ["**/*.{ts,tsx,js,jsx,py,yaml,yml,json}", "!**/*.example.*"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.1.1"],
+      "family": "datadog_pii_logged",
+      "required": false,
+      "description": "Datadog 로거 호출에 PII (email/phone/password/token) 직접 포함 의심 — 로그 마스킹 또는 scrubber 적용 검토",
+      "pattern": "(?i)logger\\.(info|debug|trace|warn|error)\\([^)]*(email|phone|mobile|password|token|jumin|ssn|card_?number)",
+      "paths": ["**/*.{ts,tsx,js,jsx,py}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.4"],
+      "family": "datadog_site_us_default",
+      "required": false,
+      "description": "Datadog 전송 site 가 US (datadoghq.com) — 한국 사용자 PII 전송 시 국외이전 통제 적용 대상",
+      "pattern": "(?i)DD_SITE\\s*[:=]\\s*['\"]?datadoghq\\.com|site\\s*:\\s*['\"]datadoghq\\.com",
+      "paths": ["**/*.{ts,tsx,js,jsx,py,yaml,yml,json}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.4", "3.1.1"],
+      "family": "external_saas_dependency",
+      "required": false,
+      "description": "외부 SaaS (Datadog) 위탁 인지 — 처리방침 위탁 매트릭스 명시 필요",
+      "pattern": "(?i)dd-trace|@datadog/|datadog-lambda|DD_API_KEY|datadoghq",
+      "paths": ["**/*.{ts,tsx,js,jsx,py}", "**/package.json"]
+    }
+  ],
+  "capabilities": {
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["datadog_api_key_inline"]
+    },
+    "data_minimization": {
+      "pii_in_logs_absent": ["datadog_pii_logged"]
+    },
+    "third_party_disclosure": {
+      "external_saas_inventory": ["external_saas_dependency"],
+      "overseas_transfer_disclosure": ["datadog_site_us_default"]
+    }
+  }
+}

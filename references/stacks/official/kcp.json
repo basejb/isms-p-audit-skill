@@ -1,0 +1,61 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "kcp",
+    "name": "NHN KCP",
+    "category": "payment",
+    "vendor": "NHN KCP",
+    "homepage": "https://www.kcp.co.kr",
+    "data_region_note": "NHN KCP 는 국내 PG. 카드/계좌 결제 정보는 PG가 PCI-DSS 환경에서 처리. ISMS-P 3.3.2 위탁업무 통지·계약 의무 적용 대상.",
+    "isms_p_relevance": ["2.7.2", "3.3.2", "3.2.5"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "package_dependency", "name": "kcp" },
+      { "type": "grep_pattern", "pattern": "(pay|stg-spl|spl|testpaygw|paygw)\\.kcp\\.co\\.kr", "paths": ["**/*.{ts,tsx,js,jsx,py,java,kt}"] }
+    ]
+  },
+  "signals": [
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "kcp_site_cd_inline",
+      "required": false,
+      "description": "KCP 사이트코드(site_cd) 평문 코드 내 하드코딩 — 정보용. 가맹점 식별자이나 환경변수 권장",
+      "pattern": "(?i)\\bsite_?cd\\s*[:=]\\s*['\"][A-Z0-9]{4,}['\"]",
+      "paths": ["**/*.{ts,tsx,js,jsx,py,java,kt}", "!**/*.example.*"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["3.2.5"],
+      "family": "kcp_card_data_proxy",
+      "required": true,
+      "description": "KCP 사용 시 카드번호/CVV/유효기간 자체 컬럼 부재 — PG 위탁 처리가 원칙. 자체 저장 시 critical",
+      "pattern": "(?i)\\b(card_?number|card_?no|cardnum|card_?pan|cvv|cvc|card_?expir)\\b\\s+(text|varchar|char|String)",
+      "paths": ["**/*.sql", "**/migrations/**", "**/schema.prisma"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.2"],
+      "family": "external_saas_dependency",
+      "required": false,
+      "description": "NHN KCP 위탁 인지 — 처리방침 위탁 매트릭스 및 결제정보 위탁사항 명시 필요",
+      "pattern": "(?i)kcp\\.co\\.kr|kcp_pay|process\\.env\\.KCP_",
+      "paths": ["**/*.{ts,tsx,js,jsx,py}", "**/package.json"]
+    }
+  ],
+  "capabilities": {
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["kcp_site_cd_inline"]
+    },
+    "encryption_at_rest": {
+      "column_plaintext_absent": ["kcp_card_data_proxy"]
+    },
+    "third_party_disclosure": {
+      "external_saas_inventory": ["external_saas_dependency"]
+    }
+  }
+}

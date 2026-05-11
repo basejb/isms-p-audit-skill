@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/basejb/isms-p-audit-skill/references/stack-profile.schema.json",
+  "title": "ISMS-P Stack Profile Schema",
+  "description": "isms-p-audit Skill v0.4 의 stack profile 정의. 메이저 스택(SST/Supabase/Next.js/Sentry/Prisma 등)별로 detection 규칙과 ISMS-P 통제 매핑된 시그널 집합을 분리한다. Tier S(official)/C(community)/U(<project>/.isms-audit/stacks/) 모두 같은 스키마를 따른다.",
+  "type": "object",
+  "required": ["schema_version", "stack", "detection", "signals"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1",
+      "description": "stack profile 스키마 버전. v0.4 시드는 '1' 고정."
+    },
+    "stack": {
+      "type": "object",
+      "required": ["id", "name", "category"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "스택 식별자 (lowercase, kebab-case). 같은 id 가 여러 Tier 에 있으면 Tier U > C > S 우선."
+        },
+        "name": {
+          "type": "string",
+          "description": "사람이 읽는 스택 이름 (e.g. 'SST v3')."
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "iac",
+            "baas-db",
+            "framework-be",
+            "framework-fe",
+            "external-saas",
+            "korean-saas",
+            "hosting",
+            "auth",
+            "payment"
+          ],
+          "description": "스택 분류. Tier 동의 매트릭스/보고서 그루핑에 사용."
+        },
+        "vendor": {
+          "type": "string",
+          "description": "공급사 (e.g. 'Supabase Inc.', 'Vercel Inc.')."
+        },
+        "homepage": {
+          "type": "string",
+          "format": "uri",
+          "description": "공식 홈페이지/문서 URL."
+        },
+        "data_region_note": {
+          "type": "string",
+          "description": "데이터 리전/국외이전 관련 경고. 보고서 §0.5 인증 범위 박스에 자동으로 반영된다."
+        },
+        "isms_p_relevance": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[1-3]\\.[0-9]+(\\.[0-9]+)?$"
+          },
+          "description": "이 스택이 영향을 주는 ISMS-P 통제 ID 목록 (정보 표시용)."
+        }
+      }
+    },
+    "detection": {
+      "type": "object",
+      "required": ["any_of"],
+      "additionalProperties": false,
+      "description": "스택 감지 규칙. any_of 중 1개라도 매치되면 활성화.",
+      "properties": {
+        "any_of": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["type", "pattern"],
+                "additionalProperties": false,
+                "properties": {
+                  "type": { "const": "file_exists" },
+                  "pattern": {
+                    "type": "string",
+                    "description": "Glob 패턴 — 1개 이상 파일이 매치되면 detection 성공."
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": ["type", "name"],
+                "additionalProperties": false,
+                "properties": {
+                  "type": { "const": "package_dependency" },
+                  "name": {
+                    "type": "string",
+                    "description": "package.json dependencies/devDependencies/peerDependencies 의 키 이름. '@scope/*' 형태 와일드카드 허용."
+                  },
+                  "manifest": {
+                    "type": "string",
+                    "default": "package.json",
+                    "description": "검사할 manifest 파일명. 기본 'package.json'. (예: 'pyproject.toml', 'go.mod')"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": ["type", "pattern"],
+                "additionalProperties": false,
+                "properties": {
+                  "type": { "const": "grep_pattern" },
+                  "pattern": {
+                    "type": "string",
+                    "description": "정규식 — paths 안에서 1건 이상 매치되면 detection 성공."
+                  },
+                  "paths": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "검색할 경로 glob 배열. 미지정 시 프로젝트 루트 전체 (성능 주의)."
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "version_capture": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "감지된 스택의 버전을 추출하기 위한 힌트. 보고서/매니페스트의 stacks_detected[].version 채움.",
+          "properties": {
+            "from": {
+              "type": "string",
+              "description": "버전을 읽을 파일 (e.g. 'package.json')."
+            },
+            "key": {
+              "type": "string",
+              "description": "JSON 키 경로 또는 추출 힌트 (e.g. 'dependencies.next')."
+            }
+          }
+        }
+      }
+    },
+    "signals": {
+      "type": "array",
+      "minItems": 1,
+      "description": "이 스택 활성 시 controls.json 시그널 풀에 합쳐질 시그널들. 각 시그널은 controls[] 배열을 통해 multi-control 매핑.",
+      "items": {
+        "type": "object",
+        "required": ["type", "access_tier", "controls", "family", "required", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "glob_exists",
+              "grep_pattern",
+              "grep_absent",
+              "file_content",
+              "manual_review",
+              "tool_invoke",
+              "cloud_api",
+              "cluster_query"
+            ]
+          },
+          "access_tier": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "0=정적, 1=외부도구, 2=클라우드RO, 3=런타임. controls.schema.json 과 동일."
+          },
+          "controls": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[1-3]\\.[0-9]+(\\.[0-9]+)?$"
+            },
+            "description": "이 시그널이 매핑되는 ISMS-P 통제 ID 들. multi-control 지원 (e.g. ['2.6.4','3.2.5'])."
+          },
+          "family": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": "dedup 용 의미 그룹 라벨. controls.json signals[].family 와 같은 namespace."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "true 면 통제 단위 fail 판정의 근거가 될 수 있음. false 는 정보 시그널."
+          },
+          "description": { "type": "string" },
+          "pattern": {
+            "type": "string",
+            "description": "grep_pattern/grep_absent 의 정규식."
+          },
+          "paths": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "검색할 경로 glob 배열."
+          },
+          "tool": {
+            "type": "string",
+            "description": "tool_invoke 의 외부 OSS 도구명."
+          },
+          "rule_id": {
+            "type": "string",
+            "description": "tool_invoke 의 룰 ID."
+          },
+          "domain": {
+            "type": "string",
+            "enum": ["iam", "network", "logging", "crypto", "backup", "vuln"],
+            "description": "cloud_api 의 사용자 동의 단위 도메인."
+          },
+          "command": {
+            "type": "string",
+            "description": "cloud_api / cluster_query 의 read-only 명령."
+          },
+          "evaluator": {
+            "type": "string",
+            "description": "cloud_api / cluster_query 결과 평가식 (자연어 또는 JMESPath)."
+          },
+          "platform": {
+            "type": "string",
+            "enum": ["kubernetes", "helm", "linux_host"],
+            "description": "cluster_query 의 런타임 플랫폼."
+          },
+          "fallback_tool": {
+            "type": "string",
+            "description": "동일 영역을 커버하는 OSS 도구 (e.g. prowler, kube-bench)."
+          },
+          "prowler_check_id": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 1
+              },
+              { "type": "null" }
+            ],
+            "description": "prowler 4.x check ID (단일 또는 AND 평가용 배열). null 은 4.x 에 정확 매핑 없음을 의미."
+          },
+          "prowler_check_id_status": {
+            "type": "string",
+            "enum": ["verified", "candidate"],
+            "description": "prowler_check_id 출처 검증 상태."
+          },
+          "comment": {
+            "type": "string",
+            "description": "시그널에 대한 자유 형식 주석."
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "description": "이 stack profile 의 시그널 family 를 capabilities.json 의 capability/aspect 로 그루핑한 메타 매핑. 키 = capability_id (snake_case), 값 = { aspect_id: [family_names] }. 시그널 변경 0 — 보고서 그루핑/검증 용도.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "auxiliary_tools": {
+      "type": "array",
+      "description": "이 스택과 함께 쓰이는 보조 도구 (e.g. Supabase Management API). 사용자 환경에 도구가 있으면 보강 시그널 평가 가능.",
+      "items": {
+        "type": "object",
+        "required": ["name", "tier", "covers"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "tier": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "command": {
+            "type": "string",
+            "description": "도구 호출 예시."
+          },
+          "covers": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "이 도구가 보강하는 통제 ID 또는 family 목록."
+          }
+        }
+      }
+    },
+    "disable_signals": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "이 profile 이 활성화될 때 비활성화할 다른 profile 의 family 리스트. 충돌 해소용 (예: SST profile 이 controls.json 의 generic 'iac_inline_iam' 를 끄고 자신의 시그널만 사용)."
+    }
+  }
+}

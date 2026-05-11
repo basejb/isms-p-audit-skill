@@ -1,0 +1,564 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/basejb/isms-p-audit-skill/references/manifest.schema.json",
+  "title": "ISMS-P Audit Manifest Schema",
+  "description": "isms-p-audit Skill v0.3+ 의 audit-manifest.json 형식 정의. 각 점검 실행마다 1개 파일이 ./.isms-audit/runs/{ts}.json 로 저장되며 보고서 §0 매니페스트 섹션의 1차 데이터 출처. 자격증명 값(키/토큰) 은 절대 포함하지 않음 — profile 이름·리전·도구 버전 등 환경 식별 정보만 기록.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "skill_version",
+    "scan",
+    "consent",
+    "tools",
+    "controls",
+    "api_calls",
+    "errors",
+    "data_retention"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1",
+      "description": "manifest 스키마 버전. v0.3 = '1'."
+    },
+    "skill_version": {
+      "type": "string",
+      "pattern": "^isms-p-audit@[0-9]+\\.[0-9]+(\\.[0-9]+)?$",
+      "description": "이 manifest 를 생성한 Skill 의 버전 (e.g. 'isms-p-audit@0.3')."
+    },
+    "scan": {
+      "type": "object",
+      "required": ["started_at", "ended_at", "as_of", "duration_s", "project_root"],
+      "additionalProperties": false,
+      "properties": {
+        "started_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "스캔 시작 시각 (RFC3339 UTC)."
+        },
+        "ended_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "스캔 종료 시각 (RFC3339 UTC)."
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date-time",
+          "description": "런타임 데이터 박제 시각 (Step 1.6 동의 직후 wall clock, RFC3339 UTC). 24h 이상 지나면 보고서 상단에 stale 경고."
+        },
+        "duration_s": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "스캔 소요 시간(초)."
+        },
+        "project_root": {
+          "type": "string",
+          "description": "스캔 대상 프로젝트 루트의 절대 경로."
+        }
+      }
+    },
+    "consent": {
+      "type": "object",
+      "required": ["tier", "domains", "source", "aws_profile", "aws_regions"],
+      "additionalProperties": false,
+      "properties": {
+        "tier": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "enum": [0, 1, 2, 3]
+          },
+          "uniqueItems": true,
+          "description": "동의 받은 access_tier 목록 (0=정적, 1=외부도구, 2=클라우드RO, 3=런타임)."
+        },
+        "domains": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["iam", "network", "logging", "crypto", "backup", "vuln"]
+          },
+          "uniqueItems": true,
+          "description": "Tier 2 진입 시 사용자가 고른 도메인. Tier <2 인 경우 빈 배열."
+        },
+        "source": {
+          "type": "string",
+          "enum": ["env", "yaml", "interactive"],
+          "description": "동의 출처: env=환경변수, yaml=.isms-audit.yml, interactive=AskUserQuestion."
+        },
+        "cloud_providers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["aws", "gcp", "azure"]
+          },
+          "uniqueItems": true,
+          "default": ["aws"],
+          "description": "v0.6 신설 — 활성화된 클라우드 공급자 목록. Tier 2 진입 시 감지된 자격증명 기반 (사용자가 multi-select 로 선택 가능). 부재 시 backward compat 으로 ['aws'] 가정. Tier <2 인 경우 빈 배열 권장."
+        },
+        "aws_profile": {
+          "type": ["string", "null"],
+          "description": "사용된 AWS profile 이름. Tier 2 미진입 또는 cloud_providers 에 aws 미포함 시 null. 값(키/토큰) 은 절대 기록하지 않음."
+        },
+        "aws_regions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "스캔 대상 AWS 리전. Tier 2 미진입 시 빈 배열."
+        },
+        "gcp_project": {
+          "type": ["string", "null"],
+          "description": "v0.6 신설 — 사용된 GCP project ID. cloud_providers 에 gcp 미포함 시 null. 자격증명 토큰 값은 절대 기록하지 않음."
+        },
+        "gcp_regions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "v0.6 신설 — 스캔 대상 GCP 리전 (e.g. 'asia-northeast3'). gcp 미포함 시 빈 배열."
+        },
+        "azure_subscription_id": {
+          "type": ["string", "null"],
+          "description": "v0.6 신설 — 사용된 Azure subscription ID. cloud_providers 에 azure 미포함 시 null."
+        },
+        "azure_locations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "v0.6 신설 — 스캔 대상 Azure location (e.g. 'koreacentral'). azure 미포함 시 빈 배열."
+        },
+        "stacks_force_enable": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "비대화 모드(.isms-audit.yml / env) 에서 명시적으로 강제 활성화된 stack id 목록. 자동 탐지 결과와 합집합. 빈 배열이면 강제 항목 없음."
+        },
+        "stacks_force_disable": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "비대화 모드에서 명시적으로 비활성화된 stack id 목록. 자동 탐지되어도 capability_evaluation/보고서에서 제외. 빈 배열이면 강제 비활성 항목 없음."
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "description": "이번 점검에서 탐지/사용한 도구 인벤토리. scan.sh 의 tools_inventory + tier 합쳐 기록.",
+      "items": {
+        "type": "object",
+        "required": ["name", "version", "tier", "skipped", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "도구 이름 (e.g. 'tfsec', 'aws-cli', 'prowler')."
+          },
+          "version": {
+            "type": ["string", "null"],
+            "description": "도구 버전. 미설치/미감지 시 null."
+          },
+          "tier": {
+            "type": "integer",
+            "enum": [0, 1, 2, 3],
+            "description": "이 도구가 속한 access_tier."
+          },
+          "skipped": {
+            "type": "boolean",
+            "description": "이번 실행에서 호출이 실제로 skip 되었는지."
+          },
+          "reason": {
+            "type": ["string", "null"],
+            "description": "skipped=true 일 때의 사유 (e.g. 'not_in_PATH', 'tier_not_consented'). false 면 null."
+          }
+        }
+      }
+    },
+    "controls": {
+      "type": "object",
+      "required": ["attempted", "passed", "failed", "partial", "unknown", "skipped"],
+      "additionalProperties": false,
+      "properties": {
+        "attempted": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/control_id" },
+          "description": "이번 실행에서 1개 이상 시그널을 평가한 통제 ID 목록."
+        },
+        "passed": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/control_id" }
+        },
+        "failed": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/control_id" }
+        },
+        "partial": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/control_id" }
+        },
+        "unknown": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/control_id" }
+        },
+        "skipped": {
+          "type": "array",
+          "description": "동의·도구·권한 부족으로 평가하지 않은 통제 + 사유.",
+          "items": {
+            "type": "object",
+            "required": ["id", "reason", "needed_tier", "needed_tool", "needed_domain", "note"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "#/$defs/control_id" },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "tier_not_consented",
+                  "domain_not_consented",
+                  "tool_missing",
+                  "tier_not_available",
+                  "outside_automatable_scope",
+                  "access_denied",
+                  "capability_unknown",
+                  "manual_review_only",
+                  "scope_not_applicable",
+                  "cloud_not_supported"
+                ],
+                "description": "skip 사유 enum. 보고서 §N 표의 한국어 라벨로 변환됨. capability_unknown=요구 capability 평가가 unknown, manual_review_only=required_capabilities 가 빈 배열인 수기 검토 전용 통제, scope_not_applicable=v0.5.0-B 부터 추가 — repo_role 이 통제의 applicable_to[] 와 일치하지 않음. cloud_not_supported=v0.6 부터 추가 — consent.cloud_providers 에 활성화된 클라우드에 대한 commands_by_cloud 또는 prowler_check_id_by_cloud 매핑 부재 (AWS 만 매핑된 시그널을 GCP/Azure 환경에서 만나는 등)."
+              },
+              "needed_tier": {
+                "type": ["integer", "null"],
+                "enum": [0, 1, 2, 3, null],
+                "description": "사유 해소에 필요한 tier. tier_not_consented/tier_not_available 일 때만 의미."
+              },
+              "needed_tool": {
+                "type": ["string", "null"],
+                "description": "tool_missing 일 때의 누락 도구 이름 (e.g. 'trivy')."
+              },
+              "needed_domain": {
+                "type": ["string", "null"],
+                "description": "domain_not_consented 일 때의 누락 도메인 (e.g. 'compute', 'privacy')."
+              },
+              "note": {
+                "type": ["string", "null"],
+                "description": "자유 형식 부가 설명 (예: '분기 권한 검토 회의록 — 외부 증적 필요')."
+              }
+            }
+          }
+        }
+      }
+    },
+    "api_calls": {
+      "type": "object",
+      "description": "Tier 2+ 의 클라우드 read-only API 호출 횟수. 키는 service 이름 또는 'cloud.service' 형식 (v0.6+ 멀티클라우드 시 prefix 권장), 값은 누적 호출 수. 'total' 키는 합계. v0.5 이전 manifest 는 unprefixed service 키 사용 — 자동으로 AWS 로 해석.",
+      "required": ["total"],
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "모든 service 호출 횟수의 합 (모든 클라우드 합산)."
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "도구/CLI 실행 중 발생한 오류 (AccessDenied, NetworkError 등). 통제 결과는 fail 이 아니라 partial/unknown 으로 분류.",
+      "items": {
+        "type": "object",
+        "required": ["control", "signal_family", "command", "error", "impact"],
+        "additionalProperties": false,
+        "properties": {
+          "control": {
+            "$ref": "#/$defs/control_id",
+            "description": "오류가 발생한 통제 ID."
+          },
+          "signal_family": {
+            "type": "string",
+            "description": "시그널 family 라벨 (e.g. 'mfa_runtime')."
+          },
+          "command": {
+            "type": "string",
+            "description": "실패한 명령 (자격증명·토큰은 마스킹 후 기록)."
+          },
+          "error": {
+            "type": "string",
+            "description": "오류 메시지 (stderr 한 줄)."
+          },
+          "impact": {
+            "type": "string",
+            "description": "이 오류가 결과 분류에 미친 영향 (e.g. 'partial 로 분류됨. 권한 추가 후 재실행 권장.')."
+          }
+        }
+      }
+    },
+    "data_retention": {
+      "type": "object",
+      "required": ["stored_locally", "uploaded_external", "external_platform"],
+      "additionalProperties": false,
+      "properties": {
+        "stored_locally": {
+          "type": "string",
+          "description": "로컬 저장 산출물 설명 (e.g. './.isms-audit/runs/{ts}.json + ./.isms-audit/reports/{ts}.md 만')."
+        },
+        "uploaded_external": {
+          "type": "boolean",
+          "description": "외부 시스템 전송 여부. v0.3 은 항상 false."
+        },
+        "external_platform": {
+          "type": "string",
+          "description": "외부 증적 플랫폼 SaaS 업로드 정책 설명 (e.g. '사용자 명시 동의 시에만')."
+        }
+      }
+    },
+    "stacks_detected": {
+      "type": "array",
+      "description": "v0.4 신설 — scan.sh stacks_detected 섹션을 그대로 박제. references/stacks/{official,community} + <project>/.isms-audit/stacks/ 의 profile 중 detection 룰이 매치된 항목만. Tier U > C > S 우선, 같은 stack id 는 한 번만. 옵션 필드 (부재 또는 빈 배열 허용 — backward compat).",
+      "items": {
+        "type": "object",
+        "required": ["id", "tier", "profile_path"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Stack profile id (e.g. 'sst', 'supabase', 'sentry')."
+          },
+          "name": {
+            "type": "string",
+            "description": "Stack profile 의 사람용 이름 (e.g. 'SST (Serverless Stack)')."
+          },
+          "tier": {
+            "type": "string",
+            "enum": ["S", "C", "U"],
+            "description": "Profile 출처 tier: S=공식(references/stacks/official), C=커뮤니티(references/stacks/community), U=사용자(<project>/.isms-audit/stacks)."
+          },
+          "profile_path": {
+            "type": "string",
+            "description": "Profile JSON 파일의 절대 경로."
+          },
+          "detection_matched": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "매치된 detection 룰 라벨 (e.g. 'file_exists:sst.config.ts', 'package_dependency:next')."
+          },
+          "version": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "null" }
+            ],
+            "description": "version_capture 룰로 추출된 버전 (e.g. '^15.1.6'). 없으면 null."
+          }
+        }
+      }
+    },
+    "capability_evaluation": {
+      "type": "array",
+      "description": "v0.4 신설 — 활성 stack profile 의 required_capabilities 평가 결과를 capability 단위로 1개씩 박제. 보고서의 Capability 표 1차 데이터 출처. 옵션 필드 (부재 또는 빈 배열 허용 — backward compat).",
+      "items": {
+        "type": "object",
+        "required": ["id", "result", "aspects"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": "capabilities.json 의 capability id (e.g. 'authentication', 'audit_logging')."
+          },
+          "name": {
+            "type": "string",
+            "description": "capability 의 사람용 이름."
+          },
+          "result": {
+            "type": "string",
+            "enum": ["satisfied", "partial", "fail", "unknown"],
+            "description": "capability 전체 평가 결과 — aspects 의 합산: 모두 satisfied=satisfied, 1+ unsatisfied & 1+ satisfied=partial, 모두 unsatisfied=fail, 평가 불가=unknown."
+          },
+          "aspects": {
+            "type": "array",
+            "description": "capability 를 구성하는 aspect 단위 평가. capabilities.json 의 aspects[] 와 1:1 매핑.",
+            "items": {
+              "type": "object",
+              "required": ["id", "result"],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "aspect id (e.g. 'strong_password_hashing')."
+                },
+                "result": {
+                  "type": "string",
+                  "enum": ["satisfied", "partial", "unsatisfied", "fail", "unknown"],
+                  "description": "aspect 단위 평가 결과. v0.6.1 부터 'fail' 도 허용 (capability-level enum 과 통일 — 'unsatisfied' 와 semantic 동일, LLM 박제 일관성). 기존 'unsatisfied' 도 여전히 valid (backward compat)."
+                },
+                "satisfied_by": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "aspect 를 충족시킨 시그널/룰 ID 목록 (e.g. 'password_hash_strong')."
+                },
+                "unsatisfied_signals": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "aspect 가 미충족된 이유에 해당하는 시그널/룰 ID 목록."
+                },
+                "skipped_reason": {
+                  "type": "string",
+                  "description": "aspect 가 평가되지 않은 사유 (자유 형식, e.g. 'tier 2 미동의')."
+                }
+              }
+            }
+          },
+          "isms_p_relevance": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "이 capability 가 영향을 주는 ISMS-P 통제 ID 목록 (e.g. ['2.5.3', '2.5.4'])."
+          }
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "description": "v0.5.0-B 신설 — 현재 레포의 역할(role) 박제. v0.5.0-A 의 scan.sh repo_role 출력을 그대로 옮긴다. 옵션 필드 (부재 OK — backward compat). 보고서의 '이 레포는 ... 입니다' 섹션과 controls.skipped[].reason=scope_not_applicable 의 1차 데이터 출처.",
+      "required": ["repo_role", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "repo_role": {
+          "type": "string",
+          "enum": ["frontend", "backend", "fullstack", "infra", "mobile", "unknown"],
+          "description": "이 레포의 역할. b.txt 의 6분류와 일치."
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["high", "medium", "low"],
+          "description": "역할 감지 신뢰도."
+        },
+        "detection_signals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "역할 감지에 기여한 시그널 라벨 목록 (e.g. 'package.json:next', 'file_exists:nest-cli.json')."
+        },
+        "candidates": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "frontend": { "type": "boolean" },
+            "backend":  { "type": "boolean" },
+            "infra":    { "type": "boolean" },
+            "mobile":   { "type": "boolean" }
+          },
+          "description": "각 후보 역할의 감지 여부. fullstack 은 frontend+backend 동시 true 로 표현."
+        },
+        "note": {
+          "type": "string",
+          "description": "자유 형식 추가 설명 (e.g. 'monorepo 루트 — apps/web 은 frontend, apps/api 는 backend')."
+        },
+        "observable_controls": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[1-3]\\.[0-9]+(\\.[0-9]+)?$" },
+          "description": "이 repo_role 에서 관찰 가능한 통제 ID 목록 — controls.json 의 applicable_to[] 와 repo_role 의 교집합."
+        },
+        "not_observable_controls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["control_id", "reason"],
+            "additionalProperties": false,
+            "properties": {
+              "control_id": {
+                "type": "string",
+                "pattern": "^[1-3]\\.[0-9]+(\\.[0-9]+)?$",
+                "description": "관찰 불가 통제 ID."
+              },
+              "reason": {
+                "type": "string",
+                "description": "관찰 불가 사유 (자유 형식, e.g. 'backend 레포에서 평가 가능 — 현재 frontend 레포')."
+              },
+              "needs_role": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["frontend", "backend", "infra", "mobile"]
+                },
+                "description": "이 통제를 관찰하려면 필요한 역할 목록."
+              }
+            }
+          },
+          "description": "이 repo_role 에서 관찰 불가한 통제 + 사유 + 필요 역할."
+        }
+      }
+    },
+    "delta_vs": {
+      "type": "object",
+      "description": "v0.5.1.1 신설 (v0.4.5 에서 자율 박제됐다가 v0.5.x 에서 누락 — 정식 복원). `<project>/.isms-audit/runs/` 안에 이전 manifest 가 있으면 manifest 작성 시 자동 박제. 옵션 필드 (부재 OK — backward compat).",
+      "additionalProperties": false,
+      "properties": {
+        "previous_run": {
+          "type": "string",
+          "description": "이전 manifest 파일의 절대 경로 또는 상대 경로."
+        },
+        "code_commits_between": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "이전 manifest 시점과 현재 시점 사이의 git 커밋 수."
+        },
+        "summary": {
+          "type": "string",
+          "description": "이전 manifest 대비 변화 요약 (자연어 1줄, LLM 자동 생성)."
+        }
+      }
+    },
+    "signals_evaluation_path": {
+      "type": "object",
+      "description": "v0.5.1.1 신설 — Step 2.1 §3 의 평가 경로 카운트. v0.6.1 부터 BLOCKING REQUIRED (LLM 자율 누락 9차 dogfood 재현 → 강제). 모든 시그널 평가 결과의 출처별 갯수 박제. 합계 ≥ controls.attempted.length.",
+      "additionalProperties": false,
+      "required": ["skill_grep", "skill_glob", "tool_invoke", "direct_cli", "prowler", "cluster_query", "skipped"],
+      "properties": {
+        "skill_grep": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Tier 0 grep_pattern / grep_absent / file_content 시그널 평가 갯수."
+        },
+        "skill_glob": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Tier 0 glob_exists 시그널 평가 갯수."
+        },
+        "tool_invoke": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Tier 1 외부 정적 도구 (tfsec/checkov/trivy/semgrep) 호출 갯수."
+        },
+        "direct_cli": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Tier 2 cloud_api 의 LLM 직접 CLI 호출 (aws/gcloud/az) 갯수 — prowler fallback."
+        },
+        "prowler": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Tier 2 cloud_api 의 prowler 룰셋 평가 갯수 — 1순위 검증된 OSS."
+        },
+        "cluster_query": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Tier 3 cluster_query (kubectl/kube-bench) 호출 갯수."
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Tier/도메인 미동의 또는 도구 미설치로 평가 안 된 시그널 갯수."
+        },
+        "note": {
+          "type": "string",
+          "description": "선택 — 평가 환경 메모 (예: 'prowler timeout — direct_cli 로 진행')."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "control_id": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$",
+      "description": "ISMS-P 통제 ID (e.g. '2.5.5')."
+    }
+  }
+}

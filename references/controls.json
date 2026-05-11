@@ -1,0 +1,2360 @@
+{
+  "schema_version": "0.3",
+  "isms_p_version": "2023.11",
+  "source_url": "https://isms.kisa.or.kr/main/ispims/notice/?boardId=bbs_0000000000000014&cntId=21&mode=view",
+  "source_document": "정보보호 및 개인정보보호 관리체계(ISMS-P) 인증기준 안내서 (KISA, 2023.11)",
+  "last_verified": "2026-05-10",
+  "description": "ISMS-P 인증기준 매핑 테이블. 공식 101개 중 56개 통제항목 커버 (Sprint 2-C 에서 27개 신규 추가). signals[] 는 isms-p-audit Skill 이 정적 분석 시 사용하는 검사 규칙. 모든 ID/명칭은 KISA 2023.11 안내서로 1차 출처 검증 완료. v0.3 부터 access_tier 필드를 통해 정적/외부도구/클라우드RO/런타임 4단계 검증을 지원. v0.4 부터 stack-specific 시그널은 references/stacks/ 의 별도 profile 로 분리 (controls.json 은 stack-agnostic 시그널만 보유). v0.4.5 부터 각 통제에 required_capabilities[] 메타 필드 추가 (시그널 변경 0, capabilities.json 의 capability+aspect 매핑). v0.5.0-B 부터 각 통제에 applicable_to[] 메타 필드 추가 — 레포 역할(frontend/backend/fullstack/infra/mobile/all)별 평가 가능성 분리 (시그널 변경 0).",
+  "controls": [
+    {
+      "id": "1.1.5",
+      "name": "정책 수립",
+      "category": "관리체계 수립 및 운영",
+      "auto_checkable": "partial",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/{SECURITY.md,security-policy.md,SECURITY.markdown}", "description": "보안/취약점 신고 정책 문서 존재", "family": "security_policy_doc", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/docs/security/**", "description": "보안 정책 문서 디렉터리 존재", "family": "security_policy_doc", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "정보보호·개인정보보호 정책서 및 시행문서의 경영진 승인·게시·검토 이력은 외부 증적 (정책 결재 문서, 게시판 캡처)", "family": "policy_governance_doc", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "governance", "required_aspects": ["security_policy_doc_present"] }
+      ],
+      "evidence_hint": "정책서 결재 문서 / 정책 게시 화면 / 정기 검토(연 1회 이상) 회의록",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.1"
+                      ],
+                      "status": "verified",
+                      "note": "정보보안 정책"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.PO-01",
+                              "GV.PO-02"
+                      ],
+                      "status": "verified",
+                      "note": "Organizational policy 수립·검토"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC1.1",
+                              "CC5.3"
+                      ],
+                      "status": "verified",
+                      "note": "통제환경 + 정책·절차 배포"
+              }
+      }
+    },
+    {
+      "id": "1.2.1",
+      "name": "정보자산 식별",
+      "category": "관리체계 수립 및 운영",
+      "auto_checkable": "partial",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/asset-inventory.{yaml,yml,json,md}", "description": "자산 목록 파일 존재", "family": "asset_inventory_present", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "자산 분류/등급 문서는 외부 증적 필요", "family": "asset_classification_doc", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "governance", "required_aspects": ["asset_inventory_documented"] }
+      ],
+      "evidence_hint": "코드 레포 외 자산관리시스템(CMDB) 스크린샷 필요",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.9",
+                              "A.5.12"
+                      ],
+                      "status": "verified",
+                      "note": "자산 목록 + 정보 분류"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "ID.AM-01",
+                              "ID.AM-02",
+                              "ID.AM-05"
+                      ],
+                      "status": "verified",
+                      "note": "Hardware/software/data inventory"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC3.2",
+                              "CC6.1"
+                      ],
+                      "status": "candidate",
+                      "note": "위험 식별을 위한 자산 식별 (간접)"
+              }
+      }
+    },
+    {
+      "id": "1.4.1",
+      "name": "법적 요구사항 준수 검토",
+      "category": "관리체계 수립 및 운영",
+      "auto_checkable": "partial",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/LICENSE*", "description": "라이선스 파일 존재 (오픈소스 의무 사항 충족)", "family": "license_file_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/{COMPLIANCE.md,compliance/**,legal/**}", "description": "법적 컴플라이언스 문서 디렉터리", "family": "legal_compliance_doc", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "개인정보보호법·정보통신망법 등 법적 요구사항 식별·준수 검토 회의록 (연 1회 이상)", "family": "legal_review_doc", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "governance", "required_aspects": ["license_compliance"] }
+      ],
+      "evidence_hint": "법적 요구사항 검토 회의록 + 법규 변경 대응 이력",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.31",
+                              "A.5.32",
+                              "A.5.34",
+                              "A.5.36"
+                      ],
+                      "status": "verified",
+                      "note": "법적·계약·지재권·프라이버시·정책 준수"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.OC-03",
+                              "GV.OV-03"
+                      ],
+                      "status": "verified",
+                      "note": "법적·규제 요구사항"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC2.3",
+                              "CC9.1"
+                      ],
+                      "status": "verified",
+                      "note": "외부 커뮤니케이션 + 규제 준수"
+              }
+      }
+    },
+    {
+      "id": "1.4.3",
+      "name": "관리체계 개선",
+      "category": "관리체계 수립 및 운영",
+      "auto_checkable": "no",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "manual_review", "access_tier": 0, "description": "관리체계 점검 결과로부터 식별된 개선과제의 이행 계획·완료 이력 (CAPA 트래커, 회의록, 재발방지 대책)", "family": "improvement_doc", "required": true }
+      ],
+      "required_capabilities": [],
+      "evidence_hint": "개선과제 이행 결과 보고서 + 경영진 보고 회의록",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.35",
+                              "A.5.36"
+                      ],
+                      "status": "verified",
+                      "note": "독립적 검토 + 정책 준수"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.OV-01",
+                              "GV.OV-02",
+                              "GV.OV-03"
+                      ],
+                      "status": "verified",
+                      "note": "전략 결과 검토·조정"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC4.1",
+                              "CC4.2",
+                              "CC5.1"
+                      ],
+                      "status": "verified",
+                      "note": "통제 모니터링·평가·개선"
+              }
+      }
+    },
+    {
+      "id": "2.5.1",
+      "name": "사용자 계정 관리",
+      "category": "인증 및 권한관리",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "(user|account)\\s+(creation|provisioning|deactivation)", "paths": ["src/**", "app/**"], "description": "계정 생성/해지 로직 존재", "family": "account_lifecycle_logic", "required": false },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "shared[-_ ]?account|guest[-_ ]?login|anonymous[-_ ]?admin", "description": "공유 계정/게스트 로그인 부재", "family": "shared_account", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "account_lifecycle", "required_aspects": ["provisioning_logic", "shared_account_absent"] }
+      ],
+      "evidence_hint": "퇴사자 계정 즉시 비활성화 SOP 외부 증적 필요",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.16",
+                              "A.5.18"
+                      ],
+                      "status": "verified",
+                      "note": "ID 관리 + 접근권한 부여/검토/해제"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.AA-01",
+                              "PR.AA-05"
+                      ],
+                      "status": "verified",
+                      "note": "Identity proofing + access management"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.2",
+                              "CC6.3"
+                      ],
+                      "status": "verified",
+                      "note": "사용자 등록·변경·해제"
+              }
+      }
+    },
+    {
+      "id": "2.5.3",
+      "name": "사용자 인증",
+      "category": "인증 및 권한관리",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "bcrypt|argon2|scrypt|pbkdf2", "paths": ["**/*.ts", "**/*.js", "**/*.py", "**/*.go", "**/*.java", "**/*.rb"], "description": "안전한 비밀번호 해싱 사용", "family": "password_hash_strong", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "mfa|otp|totp|two[-_ ]factor|2fa", "description": "MFA/2FA 구현 존재 (애플리케이션 코드)", "family": "mfa_app_code", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "aws:MultiFactorAuthPresent|aws_iam_account_password_policy", "paths": ["**/*.tf", "**/*.json", "**/*.yaml"], "description": "IAM MFA Condition / 패스워드 정책 IaC 정의", "family": "mfa_iac_present", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "IAM 정책에 aws:MultiFactorAuthPresent Condition 또는 aws_iam_account_password_policy 자체가 없는 경우는 단일 grep 으로 단정할 수 없음 — IaC 점검 시 family: mfa_iac_missing 으로 별도 표시 권장", "family": "mfa_iac_missing", "required": false },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "md5|sha1\\(.*password|plaintext.*password", "description": "취약 해시/평문 비밀번호 부재", "family": "auth_weak_hash", "required": true },
+        {"type": "cloud_api", "access_tier": 2, "domain": "iam", "command": "aws iam get-account-password-policy", "evaluator": "MinimumPasswordLength >= 14 AND RequireSymbols == true AND MaxPasswordAge <= 90 AND PasswordReusePrevention >= 5", "description": "AWS 계정 비밀번호 정책이 ISMS-P 권고 수준", "family": "password_policy_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": ["iam_password_policy_minimum_length_14", "iam_password_policy_uppercase", "iam_password_policy_lowercase", "iam_password_policy_number", "iam_password_policy_symbol", "iam_password_policy_expires_passwords_within_90_days_or_less", "iam_password_policy_reuse_24"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["iam_password_policy_minimum_length_14", "iam_password_policy_uppercase", "iam_password_policy_lowercase", "iam_password_policy_number", "iam_password_policy_symbol", "iam_password_policy_expires_passwords_within_90_days_or_less", "iam_password_policy_reuse_24"], "azure": "entra_security_defaults_enabled"}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "iam", "command": "aws iam list-users && aws iam list-mfa-devices --user-name <user>", "evaluator": "콘솔 로그인 가능 사용자 중 MFA 미등록 계정 0건", "description": "콘솔 사용자 전원 MFA 활성화", "family": "mfa_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "iam_user_mfa_enabled_console_access", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "iam_user_mfa_enabled_console_access", "azure": ["entra_non_privileged_user_has_mfa", "entra_privileged_user_has_mfa", "entra_user_with_vm_access_has_mfa", "entra_conditional_access_policy_require_mfa_for_admin_portals", "entra_conditional_access_policy_require_mfa_for_management_api"]}, "cloud_provider": "multi"}
+      ],
+      "required_capabilities": [
+        { "id": "authentication", "required_aspects": ["strong_password_hashing", "iac_password_policy", "iac_mfa_condition", "app_level_mfa_implementation"] },
+        { "id": "mfa_enforcement", "required_aspects": ["runtime_mfa_console"] }
+      ],
+      "evidence_hint": "MFA 정책 문서 외부 증적 + IaC MFA Condition / aws_iam_account_password_policy 정의 캡처",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.17",
+                              "A.8.5"
+                      ],
+                      "status": "verified",
+                      "note": "인증정보 + 안전한 인증"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.AA-03"
+                      ],
+                      "status": "verified",
+                      "note": "Users/services authenticated"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.1"
+                      ],
+                      "status": "verified",
+                      "note": "논리적 접근에 대한 인증"
+              }
+      }
+    },
+    {
+      "id": "2.5.4",
+      "name": "비밀번호 관리",
+      "category": "인증 및 권한관리",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "passwordPolicy|password_policy|minLength|min_length\\s*[:=]\\s*(8|9|1[0-9]|2[0-9])", "description": "비밀번호 정책 규칙 존재", "family": "password_policy_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "password.*rotation|password.*expir", "description": "비밀번호 변경/만료 정책", "family": "password_rotation_policy", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "authentication", "required_aspects": ["iac_password_policy"] }
+      ],
+      "evidence_hint": "비밀번호 변경 주기 정책 문서",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.17"
+                      ],
+                      "status": "verified",
+                      "note": "인증정보"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.AA-01",
+                              "PR.AA-03"
+                      ],
+                      "status": "candidate",
+                      "note": "Credential issuance + 강도 (SP 800-63B)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.1"
+                      ],
+                      "status": "verified",
+                      "note": "패스워드 정책 (자격증명 보호)"
+              }
+      }
+    },
+    {
+      "id": "2.5.5",
+      "name": "특수 계정 및 권한관리",
+      "category": "인증 및 권한관리",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "infra", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "@Roles\\(|@PreAuthorize|hasRole\\(|RBAC|casl|ability|policy", "description": "RBAC/권한 데코레이터 사용", "family": "rbac_usage", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "aws_iam_policy|aws_iam_role|kubernetes_role_binding", "paths": ["**/*.tf", "**/*.yaml"], "description": "IaC 로 권한 정의", "family": "iam_iac_present", "required": false },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "AdministratorAccess|cluster-admin|\\*\\:\\*|arn:aws:iam::aws:policy/AdministratorAccess", "paths": ["**/*.tf", "**/*.yaml", "**/*.json"], "description": "관리자 정책 직접 부여 부재", "family": "iam_admin_attached", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "Action\\s*=\\s*\"\\*\"|\"Action\"\\s*:\\s*\"\\*\"|Action\\s*=\\s*\\[\\s*\"\\*\"\\s*\\]", "paths": ["**/*.tf", "**/*.json"], "description": "IAM Action=\"*\" 와일드카드 부재", "family": "iam_wildcard", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "Resource\\s*=\\s*\"\\*\"|\"Resource\"\\s*:\\s*\"\\*\"|Resource\\s*=\\s*\\[\\s*\"\\*\"\\s*\\]", "paths": ["**/*.tf", "**/*.json"], "description": "IAM Resource=\"*\" 와일드카드 부재", "family": "iam_wildcard", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "verbs:\\s*\\[\\s*\"?\\*\"?\\s*\\]|resources:\\s*\\[\\s*\"?\\*\"?\\s*\\]", "paths": ["**/*.yaml", "**/*.yml"], "description": "K8s ClusterRole verbs/resources 전체 부여 부재", "family": "k8s_wildcard", "required": true },
+        { "type": "tool_invoke", "access_tier": 1, "tool": "tfsec", "rule_id": "AWS-IAM-NO-POLICY-WILDCARDS", "description": "tfsec 가 IAM 와일드카드 정책 부재를 확인", "family": "iam_wildcard", "required": false },
+        { "type": "tool_invoke", "access_tier": 1, "tool": "checkov", "rule_id": "CKV_AWS_40", "description": "checkov 가 IAM 정책이 사용자에 직접 attach 되지 않았음을 확인", "family": "iam_admin_attached", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "iam", "command": "aws iam list-attached-user-policies --user-name <user> && aws iam list-attached-role-policies --role-name <role>", "evaluator": "AdministratorAccess 정책이 attach 된 user/role 0건 또는 정책 사용 정당성 문서화", "description": "런타임 attached AdministratorAccess 미존재", "family": "iam_admin_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": ["iam_aws_attached_policy_no_administrative_privileges", "iam_customer_attached_policy_no_administrative_privileges", "iam_inline_policy_no_administrative_privileges", "iam_user_administrator_access_policy", "iam_role_administratoraccess_policy"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["iam_aws_attached_policy_no_administrative_privileges", "iam_customer_attached_policy_no_administrative_privileges", "iam_inline_policy_no_administrative_privileges", "iam_user_administrator_access_policy", "iam_role_administratoraccess_policy"], "gcp": ["iam_sa_no_administrative_privileges", "iam_no_service_roles_at_project_level"], "azure": ["iam_subscription_roles_owner_custom_not_created", "iam_role_user_access_admin_restricted", "iam_custom_role_has_permissions_to_administer_resource_locks"]}, "cloud_provider": "multi"},
+        { "type": "cloud_api", "access_tier": 2, "domain": "iam", "command": "aws iam list-account-aliases", "evaluator": "AccountAliases 가 비어있지 않음", "description": "AWS 계정 alias 설정 (운영 식별성)", "family": "account_alias", "required": false, "fallback_tool": "prowler", "prowler_check_id": null, "prowler_check_id_status": "candidate", "comment": "prowler 4.x master tree 의 account/iam 서비스에 account_alias 전용 check 없음 — 향후 release 재확인 필요" },
+        { "type": "cluster_query", "access_tier": 3, "platform": "kubernetes", "command": "kubectl get clusterrolebinding -o json", "evaluator": "subjects 에 system:authenticated/system:unauthenticated 매핑된 ClusterRole 의 rules 가 wildcard 아님", "description": "K8s ClusterRole 와일드카드 RBAC 부재", "family": "k8s_wildcard", "required": true, "fallback_tool": "kube-bench" },
+        {"type": "cloud_api", "access_tier": 2, "domain": "iam", "command": "aws accessanalyzer list-analyzers --type ACCOUNT --query 'analyzers[?status==`ACTIVE`]'", "evaluator": "ACTIVE 상태 ACCOUNT 또는 ORGANIZATION 타입 analyzer 1개 이상", "description": "IAM Access Analyzer 활성화 (외부 공유 자원 자동 식별)", "family": "access_analyzer_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": "accessanalyzer_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "accessanalyzer_enabled", "gcp": "iam_cloud_asset_inventory_enabled", "azure": "defender_ensure_defender_for_arm_is_on"}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "iam", "command": "aws iam get-account-summary && aws iam list-virtual-mfa-devices --assignment-status Assigned", "evaluator": "AccountSummary.AccountMFAEnabled == 1 AND root 계정 MFA 활성 + root access key 0건 + 90일 이내 root 콘솔 미사용", "description": "Root 계정 보호 (MFA 활성 + 액세스 키 부재 + 미사용)", "family": "root_account_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": ["iam_root_hardware_mfa_enabled", "iam_root_mfa_enabled", "iam_avoid_root_usage", "iam_no_root_access_key"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["iam_root_hardware_mfa_enabled", "iam_root_mfa_enabled", "iam_avoid_root_usage", "iam_no_root_access_key"], "azure": ["entra_global_admin_in_less_than_five_users", "entra_privileged_user_has_mfa"]}, "cloud_provider": "multi"}
+      ],
+      "required_capabilities": [
+        {"id": "access_control", "required_aspects": ["rbac_decorators", "iac_iam_definition", "admin_policy_not_attached", "wildcard_action_absent", "k8s_wildcard_absent", "inline_iam_review"]},
+        {"id": "mfa_enforcement", "required_aspects": ["root_account_hardening"]}
+      ],
+      "evidence_hint": "관리자 권한 신청/승인 워크플로우 외부 증적",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.2"
+                      ],
+                      "status": "verified",
+                      "note": "특권 액세스 권한"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.AA-05"
+                      ],
+                      "status": "verified",
+                      "note": "Least privilege + separation of duties"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.1",
+                              "CC6.3"
+                      ],
+                      "status": "verified",
+                      "note": "특권 사용자 접근 관리"
+              }
+      }
+    },
+    {
+      "id": "2.5.6",
+      "name": "접근권한 검토",
+      "category": "인증 및 권한관리",
+      "auto_checkable": "no",
+      "applicable_to": ["backend", "fullstack", "all"],
+      "signals": [
+        { "type": "manual_review", "access_tier": 0, "description": "분기별 권한 검토 회의록/리포트 외부 증적 필요", "family": "access_review_doc", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "iam", "command": "aws iam list-access-keys && aws iam get-access-key-last-used", "evaluator": "모든 active access key 의 LastUsedDate 가 90일 이내", "description": "장기 미사용 IAM Access Key 부재 (90일 초과 미사용 키 회수)", "family": "stale_access_key", "required": true, "fallback_tool": "prowler", "prowler_check_id": ["iam_user_accesskey_unused", "iam_rotate_access_key_90_days"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["iam_user_accesskey_unused", "iam_rotate_access_key_90_days"], "gcp": ["iam_sa_user_managed_key_unused", "iam_sa_user_managed_key_rotate_90_days"], "azure": "storage_key_rotation_90_days"}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "iam", "command": "aws iam list-access-keys --user-name <user> && aws iam get-access-key-last-used --access-key-id <key>", "evaluator": "LastUsedDate 가 90일 이전이거나 null 인 active access key 0건", "description": "90일 미사용 active access key 부재", "family": "stale_access_key_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "iam_user_accesskey_unused", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "iam_user_accesskey_unused", "gcp": "iam_sa_user_managed_key_unused"}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "iam", "command": "aws iam generate-credential-report && aws iam get-credential-report", "evaluator": "password_last_used 가 90일 이전인 콘솔 사용자 0건", "description": "90일 미사용 콘솔 사용자 식별", "family": "stale_console_user_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": "iam_user_console_access_unused", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "iam_user_console_access_unused", "gcp": "iam_service_account_unused"}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "iam", "command": "aws secretsmanager list-secrets --query 'SecretList[].{Name:Name, Rotation:RotationEnabled}'", "evaluator": "모든 활성 시크릿이 RotationEnabled=true AND 회전 주기 <= 90일", "description": "SecretsManager 시크릿 자동 회전 활성", "family": "secretsmanager_rotation_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": "secretsmanager_automatic_rotation_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "secretsmanager_automatic_rotation_enabled", "azure": ["keyvault_non_rbac_secret_expiration_set", "keyvault_rbac_secret_expiration_set"]}, "cloud_provider": "multi"}
+      ],
+      "required_capabilities": [
+        {"id": "account_lifecycle", "required_aspects": ["inactive_credentials_rotation"]},
+        {"id": "secrets_management", "required_aspects": ["kms_or_vault_used"]}
+      ],
+      "evidence_hint": "분기 1회 권한 검토 결과서",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.18"
+                      ],
+                      "status": "verified",
+                      "note": "접근권한 정기 검토"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.AA-05"
+                      ],
+                      "status": "verified",
+                      "note": "Access permissions 정기 검토"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.2",
+                              "CC6.3"
+                      ],
+                      "status": "verified",
+                      "note": "접근권한 정기 리뷰"
+              }
+      }
+    },
+    {
+      "id": "2.6.1",
+      "name": "네트워크 접근",
+      "category": "접근통제",
+      "auto_checkable": "yes",
+      "applicable_to": ["infra", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_absent", "access_tier": 0, "pattern": "0\\.0\\.0\\.0/0", "paths": ["**/*.tf", "**/*.yaml"], "description": "전체 개방 CIDR 부재", "family": "network_open", "required": true },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "security_group|network_policy|ingress|nacl", "description": "네트워크 정책 정의", "family": "network_policy_present", "required": false },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "acl\\s*=\\s*\"public(-read)?(-write)?\"", "paths": ["**/*.tf"], "description": "S3 공개 ACL 부재 (public-read / public-read-write)", "family": "s3_public", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "block_public_acls\\s*=\\s*false", "paths": ["**/*.tf"], "description": "S3 public access block: block_public_acls=false 부재", "family": "s3_public", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "block_public_policy\\s*=\\s*false", "paths": ["**/*.tf"], "description": "S3 public access block: block_public_policy=false 부재", "family": "s3_public", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "ignore_public_acls\\s*=\\s*false", "paths": ["**/*.tf"], "description": "S3 public access block: ignore_public_acls=false 부재", "family": "s3_public", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "restrict_public_buckets\\s*=\\s*false", "paths": ["**/*.tf"], "description": "S3 public access block: restrict_public_buckets=false 부재", "family": "s3_public", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "type\\s*=\\s*\"LoadBalancer\"|type:\\s*LoadBalancer", "paths": ["**/*.yaml", "**/*.yml", "**/*.tf"], "description": "Kubernetes Service type=LoadBalancer 외부 노출 의심 (필요 시 IP 화이트리스트 검토)", "family": "k8s_loadbalancer_exposed", "required": false },
+        { "type": "tool_invoke", "access_tier": 1, "tool": "tfsec", "rule_id": "AWS-S3-NO-PUBLIC-ACCESS-WITH-ACL", "description": "tfsec 가 S3 버킷 public ACL 부재를 확인", "family": "s3_public", "required": false },
+        { "type": "tool_invoke", "access_tier": 1, "tool": "checkov", "rule_id": "CKV_AWS_24", "description": "checkov 가 SG 22/3389 포트의 0.0.0.0/0 미개방을 확인", "family": "network_open", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "network", "command": "aws ec2 describe-security-groups", "evaluator": "IpPermissions 의 IpRanges.CidrIp == '0.0.0.0/0' 이며 FromPort 가 22/3389/3306/5432/27017/6379 인 SG rule 0건", "description": "런타임 SG 에 위험 포트의 전체 개방 ingress 부재", "family": "sg_ingress_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": ["ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_22", "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_3389", "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_mysql_3306", "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_postgres_5432", "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_mongodb_27017_27018", "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_redis_6379", "ec2_securitygroup_allow_ingress_from_internet_to_high_risk_tcp_ports"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_22", "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_3389", "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_mysql_3306", "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_postgres_5432", "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_mongodb_27017_27018", "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_redis_6379", "ec2_securitygroup_allow_ingress_from_internet_to_high_risk_tcp_ports"], "gcp": ["compute_firewall_ssh_access_from_the_internet_allowed", "compute_firewall_rdp_access_from_the_internet_allowed"], "azure": ["network_ssh_internet_access_restricted", "network_rdp_internet_access_restricted", "network_http_internet_access_restricted", "network_udp_internet_access_restricted"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "network", "command": "aws s3api get-bucket-policy-status --bucket <bucket> && aws s3api get-public-access-block --bucket <bucket>", "evaluator": "PolicyStatus.IsPublic == false AND PublicAccessBlockConfiguration 의 4개 플래그 모두 true", "description": "런타임 S3 버킷이 public 아니며 public access block 활성", "family": "s3_public_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": ["s3_bucket_public_access", "s3_bucket_level_public_access_block", "s3_account_level_public_access_blocks", "s3_bucket_policy_public_write_access", "s3_bucket_public_write_acl", "s3_bucket_public_list_acl"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["s3_bucket_public_access", "s3_bucket_level_public_access_block", "s3_account_level_public_access_blocks", "s3_bucket_policy_public_write_access", "s3_bucket_public_write_acl", "s3_bucket_public_list_acl"], "gcp": ["cloudstorage_bucket_public_access", "cloudstorage_bucket_uniform_bucket_level_access"], "azure": ["storage_blob_public_access_level_is_disabled", "storage_default_network_access_rule_is_denied", "storage_ensure_private_endpoints_in_storage_accounts"]}, "cloud_provider": "multi"},
+        { "type": "cluster_query", "access_tier": 3, "platform": "kubernetes", "command": "kubectl get networkpolicy -A -o json && kubectl get namespaces -o json", "evaluator": "비-시스템 네임스페이스 모두 1개 이상 NetworkPolicy 적용", "description": "K8s 모든 워크로드 네임스페이스에 NetworkPolicy 적용", "family": "k8s_networkpolicy_runtime", "required": false, "fallback_tool": "kubeaudit" }
+      ],
+      "required_capabilities": [
+        { "id": "network_isolation", "required_aspects": ["no_open_cidr", "no_public_s3", "network_policy_defined"] }
+      ],
+      "evidence_hint": "네트워크 구성도(망 분리 도식) + S3/LB 공개 여부 캡처",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.20",
+                              "A.8.22"
+                      ],
+                      "status": "verified",
+                      "note": "네트워크 보안 + 네트워크 분리"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.AA-06",
+                              "PR.IR-01"
+                      ],
+                      "status": "verified",
+                      "note": "물리·논리 접근 + 네트워크 보호"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.1",
+                              "CC6.6"
+                      ],
+                      "status": "verified",
+                      "note": "네트워크 경계 및 외부 위협 보호"
+              }
+      }
+    },
+    {
+      "id": "2.6.2",
+      "name": "정보시스템 접근",
+      "category": "접근통제",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "infra", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "ssh|bastion|jump[-_ ]?host|teleport|ssm[-_ ]?session", "description": "관리자 접근통제 채널 존재", "family": "admin_channel_present", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "network", "command": "aws ec2 describe-instances --query 'Reservations[].Instances[].{Id:InstanceId, IMDSv2:MetadataOptions.HttpTokens}'", "evaluator": "모든 EC2 인스턴스의 MetadataOptions.HttpTokens == 'required'", "description": "EC2 IMDSv2 강제 (메타데이터 토큰 필수)", "family": "ec2_imdsv2_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "ec2_instance_imdsv2_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "ec2_instance_imdsv2_enabled", "gcp": ["compute_instance_block_project_wide_ssh_keys_disabled", "compute_instance_default_service_account_in_use"]}, "cloud_provider": "multi"}
+      ],
+      "required_capabilities": [
+        {"id": "access_control", "required_aspects": ["rbac_decorators", "iac_iam_definition", "metadata_service_protected"]},
+        {"id": "application_access_control", "required_aspects": ["middleware_present"]}
+      ],
+      "evidence_hint": "Bastion/SSM 세션 로그",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.3",
+                              "A.8.5"
+                      ],
+                      "status": "verified",
+                      "note": "정보접근 제한 + 안전한 인증"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.AA-05"
+                      ],
+                      "status": "verified",
+                      "note": "Access permissions"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.1"
+                      ],
+                      "status": "verified",
+                      "note": "논리적 접근통제"
+              }
+      }
+    },
+    {
+      "id": "2.6.3",
+      "name": "응용프로그램 접근",
+      "category": "접근통제",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_absent", "access_tier": 0, "pattern": "AuthType\\s*=\\s*[\"']?NONE[\"']?|authorization_type\\s*=\\s*[\"']?NONE[\"']?", "paths": ["**/*.tf", "**/*.yaml", "**/*.yml", "**/*.json"], "description": "Lambda Function URL / API Gateway authorizer 가 NONE (무인증) 부재", "family": "app_no_auth_iac", "required": true },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "(authorize|authenticate|requireAuth|isAuthenticated|@PreAuthorize|@Secured|login_required|authn|authz|middleware\\.auth|authGuard|use\\([^)]*auth)", "paths": ["**/middleware/**", "**/middlewares/**", "**/guards/**", "**/auth/**", "src/**", "app/**"], "description": "인증/인가 미들웨어/가드 코드 존재", "family": "app_auth_middleware_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "session|jwt|cookie.*secure|csrf", "description": "세션/토큰/CSRF 보호 메커니즘 존재", "family": "app_session_protection", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "관리자/운영자 화면의 IP 화이트리스트, 접근권한 매트릭스, 화면별 권한 분리 증적", "family": "admin_access_matrix", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "network", "command": "aws lambda list-functions --query 'Functions[].FunctionName' && aws lambda get-function-url-config --function-name <name>", "evaluator": "Function URL 이 있는 모든 Lambda 의 AuthType != 'NONE' (혹은 Function URL 자체 미사용)", "description": "Lambda Function URL 인증 강제 (AuthType=NONE 부재)", "family": "lambda_function_url_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "awslambda_function_url_public", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "awslambda_function_url_public", "azure": ["app_function_not_publicly_accessible", "app_function_access_keys_configured"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "network", "command": "aws apigateway get-rest-apis && aws apigatewayv2 get-apis", "evaluator": "외부 노출 API Gateway 의 resource policy 또는 인증 (IAM/JWT/Lambda authorizer) 설정", "description": "API Gateway 인증·리소스 정책", "family": "api_gateway_resource_policy_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": "apigateway_restapi_public", "prowler_check_id_status": "candidate", "prowler_check_id_by_cloud": {"aws": "apigateway_restapi_public", "azure": "apim_threat_detection_llm_jacking"}, "cloud_provider": "multi"}
+      ],
+      "required_capabilities": [
+        {"id": "application_access_control", "required_aspects": ["function_url_authenticated", "middleware_present", "app_layer_authn_present"]}
+      ],
+      "evidence_hint": "관리자 화면 접속 이력 + 권한 매트릭스 표 + 비인가 접근 차단 화면 캡처",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.3",
+                              "A.8.4"
+                      ],
+                      "status": "verified",
+                      "note": "정보접근 제한 + 소스코드 접근"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.AA-05",
+                              "PR.PS-01"
+                      ],
+                      "status": "verified",
+                      "note": "Access + secure configuration"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.1"
+                      ],
+                      "status": "verified",
+                      "note": "애플리케이션 접근통제"
+              }
+      }
+    },
+    {
+      "id": "2.6.4",
+      "name": "데이터베이스 접근",
+      "category": "접근통제",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "infra", "all"],
+      "signals": [
+        { "type": "grep_absent", "access_tier": 0, "pattern": "publicly_accessible\\s*=\\s*true", "paths": ["**/*.tf"], "description": "RDS Public Access OFF", "family": "db_public", "required": true },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "iam_database_authentication_enabled\\s*=\\s*true", "paths": ["**/*.tf"], "description": "IAM DB 인증 활성화", "family": "db_iam_auth_present", "required": false },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "USING\\s*\\(\\s*true\\s*\\)|WITH\\s+CHECK\\s*\\(\\s*true\\s*\\)|FOR\\s+ALL\\s+TO\\s+\\w+\\s+USING\\s*\\(\\s*true\\s*\\)", "paths": ["**/*.sql", "db/migrations/**", "prisma/migrations/**"], "description": "PostgreSQL RLS 정책에 무조건 허용 (USING true / WITH CHECK true) 부재 (stack-agnostic — Supabase 전용 PII 테이블 정밀 검사는 stacks/official/supabase.json)", "family": "rls_open", "required": true },
+        {"type": "cloud_api", "access_tier": 2, "domain": "network", "command": "aws rds describe-db-instances --query 'DBInstances[].{Id:DBInstanceIdentifier, Public:PubliclyAccessible}'", "evaluator": "DBInstance 의 PubliclyAccessible == true 0건", "description": "RDS DB 인스턴스 public access 부재", "family": "rds_public_access_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "rds_instance_no_public_access", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "rds_instance_no_public_access", "gcp": ["cloudsql_instance_public_access", "cloudsql_instance_public_ip", "cloudsql_instance_private_ip_assignment"], "azure": ["sqlserver_unrestricted_inbound_access", "postgresql_flexible_server_allow_access_services_disabled"]}, "cloud_provider": "multi"}
+      ],
+      "required_capabilities": [
+        { "id": "network_isolation", "required_aspects": ["no_public_db"] },
+        { "id": "encryption_at_rest", "required_aspects": ["column_plaintext_absent", "column_encryption_present"] }
+      ],
+      "evidence_hint": "DBA 접근권한 명단",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.3",
+                              "A.8.12"
+                      ],
+                      "status": "verified",
+                      "note": "정보접근 제한 + 데이터 누출 방지"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.AA-05",
+                              "PR.DS-01"
+                      ],
+                      "status": "verified",
+                      "note": "Access + data-at-rest 보호"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.1"
+                      ],
+                      "status": "verified",
+                      "note": "DB 접근통제"
+              }
+      }
+    },
+    {
+      "id": "2.6.6",
+      "name": "원격접근 통제",
+      "category": "접근통제",
+      "auto_checkable": "yes",
+      "applicable_to": ["infra", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "vpn|wireguard|zero[-_ ]?trust|cloudflare[-_ ]?tunnel", "description": "원격접근 통제 수단 존재", "family": "remote_access_channel", "required": false },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "port\\s*=\\s*22.*0\\.0\\.0\\.0/0", "paths": ["**/*.tf"], "description": "SSH 전체 개방 부재", "family": "ssh_open", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "network_isolation", "required_aspects": ["no_open_cidr"] }
+      ],
+      "evidence_hint": "VPN 사용자 명단/MFA 적용 증적",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.6.7",
+                              "A.8.1"
+                      ],
+                      "status": "verified",
+                      "note": "재택근무 + 사용자 엔드포인트"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.AA-06",
+                              "PR.IR-01"
+                      ],
+                      "status": "verified",
+                      "note": "원격 접근 인증 + 네트워크 보호"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.6",
+                              "CC6.7"
+                      ],
+                      "status": "verified",
+                      "note": "외부 시스템 경계 + 정보 전송"
+              }
+      }
+    },
+    {
+      "id": "2.6.7",
+      "name": "인터넷 접속 통제",
+      "category": "접근통제",
+      "auto_checkable": "yes",
+      "applicable_to": ["infra", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "egress|outbound|external[-_ ]?api|allowlist|whitelist|allowed_hosts|allowed_origins", "description": "외부 호출 화이트리스트/egress 통제 설정 존재", "family": "egress_allowlist_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "vpc_endpoint|aws_vpc_endpoint|privatelink|nat_gateway", "paths": ["**/*.tf", "**/*.yaml"], "description": "VPC Endpoint / NAT Gateway 통한 인터넷 통제", "family": "vpc_endpoint_present", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "network", "command": "aws ec2 describe-vpc-endpoints && aws ec2 describe-security-groups", "evaluator": "운영 VPC 에 1개 이상 VPC Endpoint 존재 AND egress SG 규칙이 0.0.0.0/0 + all-protocol 무제한 부재", "description": "런타임 VPC Endpoint / egress 통제 설정", "family": "egress_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": ["ec2_securitygroup_with_many_ingress_egress_rules", "vpc_endpoint_connections_trust_boundaries"], "prowler_check_id_status": "candidate", "comment": "egress full-open 전용 prowler check 미존재 — vpc_endpoint_connections 와 SG 다수 규칙 검사로 보완", "prowler_check_id_by_cloud": {"aws": ["ec2_securitygroup_with_many_ingress_egress_rules", "vpc_endpoint_connections_trust_boundaries"], "gcp": "cloudstorage_uses_vpc_service_controls", "azure": ["storage_ensure_private_endpoints_in_storage_accounts", "keyvault_private_endpoints"]}, "cloud_provider": "multi"},
+        { "type": "manual_review", "access_tier": 0, "description": "내부망 → 인터넷 직접 접속 통제 정책 (프록시 / 방화벽 룰) 외부 증적", "family": "internet_access_policy_doc", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "internet_egress_control", "required_aspects": ["vpc_endpoint_or_egress_proxy"] }
+      ],
+      "evidence_hint": "프록시/방화벽 룰셋 + 외부 API 호출 화이트리스트 매트릭스",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.22",
+                              "A.8.23"
+                      ],
+                      "status": "verified",
+                      "note": "네트워크 분리 + 웹 필터링"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.IR-01",
+                              "DE.CM-01"
+                      ],
+                      "status": "verified",
+                      "note": "Network protection + monitoring"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.6"
+                      ],
+                      "status": "verified",
+                      "note": "외부 위협 차단"
+              }
+      }
+    },
+    {
+      "id": "2.7.1",
+      "name": "암호정책 적용",
+      "category": "암호화 적용",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "infra", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_absent", "access_tier": 0, "pattern": "createCipher\\(|DES|RC4|MD5", "description": "취약 암호 알고리즘 부재", "family": "crypto_weak", "required": true },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "AES-256|aes_256|GCM|ChaCha20", "description": "강한 대칭키 알고리즘 사용", "family": "crypto_strong_present", "required": false },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "ssl\\s*[:=]\\s*false|rejectUnauthorized\\s*[:=]\\s*false|verify\\s*=\\s*False|tls_verify\\s*[:=]\\s*false|insecureSkipVerify\\s*[:=]\\s*true", "paths": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.py", "**/*.go", "**/*.rb", "**/*.java"], "description": "TLS 검증 비활성화 (ssl=false / rejectUnauthorized:false / verify=False / InsecureSkipVerify=true) 부재", "family": "tls_verify_disabled", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "(?i)(disable[-_ ]?tls|insecure[-_ ]?transport|allow[-_ ]?http)", "paths": ["**/*.ts", "**/*.js", "**/*.py", "**/*.go", "**/*.tf", "**/*.yaml", "**/*.yml"], "description": "TLS 비활성/insecure 토글 부재", "family": "tls_verify_disabled", "required": true },
+        { "type": "cloud_api", "access_tier": 2, "domain": "crypto", "command": "aws cloudfront list-distributions", "evaluator": "모든 배포의 ViewerCertificate.MinimumProtocolVersion >= TLSv1.2_2021", "description": "CloudFront 모든 배포가 TLS 1.2 이상 강제", "family": "cloudfront_tls", "required": true, "fallback_tool": "prowler", "prowler_check_id": "cloudfront_distributions_using_deprecated_ssl_protocols", "prowler_check_id_status": "verified" },
+        {"type": "cloud_api", "access_tier": 2, "domain": "crypto", "command": "aws elbv2 describe-listeners", "evaluator": "모든 HTTPS 리스너의 SslPolicy 가 ELBSecurityPolicy-TLS13-1-2-* 또는 -TLS-1-2-* 이상", "description": "ALB/ELB HTTPS 리스너가 TLS 1.2 이상", "family": "alb_tls", "required": false, "fallback_tool": "prowler", "prowler_check_id": ["elbv2_insecure_ssl_ciphers", "elbv2_listeners_underneath", "elbv2_ssl_listeners"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["elbv2_insecure_ssl_ciphers", "elbv2_listeners_underneath", "elbv2_ssl_listeners"], "azure": "app_minimum_tls_version_12"}, "cloud_provider": "multi"}
+      ],
+      "required_capabilities": [
+        { "id": "encryption_in_transit", "required_aspects": ["cloudfront_tls_modern", "alb_tls_modern", "tls_verify_enabled", "weak_cipher_absent"] }
+      ],
+      "evidence_hint": "암호정책 문서",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.24"
+                      ],
+                      "status": "verified",
+                      "note": "암호화 사용"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.DS-01",
+                              "PR.DS-02"
+                      ],
+                      "status": "verified",
+                      "note": "Data-at-rest + in-transit 보호"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.1",
+                              "CC6.7"
+                      ],
+                      "status": "verified",
+                      "note": "암호화를 통한 데이터 보호"
+              }
+      }
+    },
+    {
+      "id": "2.7.2",
+      "name": "암호키 관리",
+      "category": "암호화 적용",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "infra", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "kms|KMSClient|aws_kms_key|secrets[-_ ]?manager|vault|sealed[-_ ]?secrets", "description": "키 관리 서비스 사용", "family": "kms_usage", "required": false },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "(?i)(api[-_ ]?key|secret|token|password|aws[-_ ]?access[-_ ]?key|aws[-_ ]?secret|slack[-_ ]?(bot[-_ ]?)?token|bearer)\\s*[:=]\\s*['\"][A-Za-z0-9_/+=\\-]{20,}", "paths": ["**/*.ts", "**/*.js", "**/*.py", "**/*.tf", "**/*.yaml", "**/*.env*"], "description": "하드코딩 시크릿 (변수 할당 형태, case-insensitive)", "family": "hardcoded_secret", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "(?i)\\b(secret|access[-_ ]?key|api[-_ ]?key|password|passwd|passphrase|private[-_ ]?key|auth[-_ ]?token|bearer[-_ ]?token|jwt[-_ ]?secret|client[-_ ]?secret)\\b[A-Za-z0-9_]*\\s*[:=]\\s*['\"][^'\"\\n]{8,}['\"]", "paths": ["**/*.ts", "**/*.js", "**/*.py", "**/*.tf", "**/*.yaml", "**/*.yml", "**/*.env*", "**/*.go", "**/*.java", "**/*.rb", "**/*.json"], "description": "변수명 prefix 토큰 — SECRET_*/PASSWORD/API_KEY/TOKEN 등 키워드가 변수명 안에 포함된 평문 시크릿", "family": "hardcoded_secret", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "(?i)\\b(AWS_SECRET_ACCESS_KEY|AWS_ACCESS_KEY_ID|AWS_SESSION_TOKEN|DB_PASSWORD|DATABASE_PASSWORD|REDIS_PASSWORD|JWT_SECRET|SESSION_SECRET|ENCRYPTION_KEY|ADMIN_PASSWORD|GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|SLACK_BOT_TOKEN|SLACK_TOKEN|STRIPE_SECRET_KEY|OPENAI_API_KEY)\\s*[:=]\\s*['\"][^'\"\\n]{6,}['\"]", "paths": ["**/*.ts", "**/*.js", "**/*.py", "**/*.tf", "**/*.yaml", "**/*.yml", "**/*.env*", "**/*.go", "**/*.java", "**/*.rb", "**/*.json"], "description": "관용적 시크릿 환경변수명 — AWS_*/DB_*/JWT_*/STRIPE_* 등 명시 prefix 평문 할당", "family": "hardcoded_secret", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}", "paths": ["**/*"], "description": "AWS Access Key ID 평문 노출", "family": "hardcoded_secret", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "xox[baprs]-[A-Za-z0-9-]{10,}", "paths": ["**/*"], "description": "Slack 토큰 평문 노출", "family": "hardcoded_secret", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "-----BEGIN (RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----", "paths": ["**/*"], "description": "RSA/EC/OpenSSH Private Key 평문 노출", "family": "hardcoded_secret", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "sk_(live|test)_[A-Za-z0-9]{20,}", "paths": ["**/*"], "description": "Stripe / 유사 서비스 시크릿 키", "family": "hardcoded_secret", "required": true },
+        { "type": "tool_invoke", "access_tier": 1, "tool": "tfsec", "rule_id": "AWS-KMS-AUTO-ROTATE-KEYS", "description": "tfsec 가 KMS 키 자동 회전 활성 선언을 확인", "family": "kms_rotation_iac", "required": false },
+        { "type": "tool_invoke", "access_tier": 1, "tool": "checkov", "rule_id": "CKV_AWS_7", "description": "checkov 가 KMS 키 회전 활성을 확인", "family": "kms_rotation_iac", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "crypto", "command": "aws kms list-keys && aws kms get-key-rotation-status --key-id <id>", "evaluator": "고객 관리 KMS key 중 KeyRotationEnabled == false 인 키 0건", "description": "런타임 모든 고객 관리 KMS 키의 자동 회전 활성", "family": "kms_rotation_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "kms_cmk_rotation_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "kms_cmk_rotation_enabled", "gcp": "kms_key_rotation_enabled", "azure": "keyvault_key_rotation_enabled"}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "crypto", "command": "aws rds describe-db-instances --query 'DBInstances[].{Id:DBInstanceIdentifier, Encrypted:StorageEncrypted}'", "evaluator": "운영 DBInstance 의 StorageEncrypted == true 100%", "description": "RDS 저장 데이터 암호화 100%", "family": "rds_encryption_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "rds_instance_storage_encrypted", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "rds_instance_storage_encrypted", "azure": ["sqlserver_tde_encryption_enabled", "sqlserver_tde_encrypted_with_cmk"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "crypto", "command": "aws ec2 get-ebs-encryption-by-default --region <region>", "evaluator": "모든 활성 리전에서 EbsEncryptionByDefault == true", "description": "EBS 기본 암호화 활성 (계정 수준)", "family": "ebs_default_encryption_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "ec2_ebs_default_encryption", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "ec2_ebs_default_encryption", "gcp": "compute_instance_encryption_with_csek_enabled", "azure": ["vm_ensure_attached_disks_encrypted_with_cmk", "vm_ensure_unattached_disks_encrypted_with_cmk"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "crypto", "command": "aws s3api list-buckets && aws s3api get-bucket-encryption --bucket <each>", "evaluator": "모든 S3 버킷의 ServerSideEncryptionConfiguration 존재 (AES256 또는 aws:kms)", "description": "S3 버킷 기본 암호화 100%", "family": "s3_default_encryption_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "s3_bucket_default_encryption", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "s3_bucket_default_encryption", "azure": ["storage_ensure_encryption_with_customer_managed_keys", "storage_infrastructure_encryption_is_enabled"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "crypto", "command": "aws dynamodb list-tables && aws dynamodb describe-table --table-name <name>", "evaluator": "모든 DynamoDB 테이블의 SSEDescription.Status == 'ENABLED' (가능 시 KMS CMK)", "description": "DynamoDB 저장 데이터 암호화", "family": "dynamodb_encryption_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": "dynamodb_tables_kms_cmk_encryption_enabled", "prowler_check_id_status": "verified"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "crypto", "command": "aws ssm describe-parameters --query 'Parameters[].{Name:Name, Type:Type}'", "evaluator": "민감 정보 (token, key, password, secret) 가 이름에 포함된 파라미터의 Type == 'SecureString'", "description": "SSM Parameter 민감정보 SecureString 사용", "family": "ssm_parameter_securestring_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": null, "prowler_check_id_status": "candidate", "comment": "prowler 5.x 에 SecureString 전용 check 미존재 — direct CLI 평가"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "crypto", "command": "aws efs describe-file-systems --query 'FileSystems[].{Id:FileSystemId, Encrypted:Encrypted}'", "evaluator": "모든 EFS FileSystem 의 Encrypted == true", "description": "EFS 저장 데이터 암호화", "family": "efs_encryption_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": "efs_encryption_at_rest_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "efs_encryption_at_rest_enabled", "azure": "storage_ensure_file_shares_soft_delete_is_enabled"}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "crypto", "command": "aws sns list-topics && aws sns get-topic-attributes --topic-arn <arn> && aws sqs list-queues && aws sqs get-queue-attributes --queue-url <url>", "evaluator": "모든 SNS 토픽의 KmsMasterKeyId 설정 AND 모든 SQS 큐의 KmsMasterKeyId 또는 SqsManagedSseEnabled 설정", "description": "SNS/SQS 메시지 큐 암호화", "family": "sns_sqs_encryption_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": ["sns_topics_kms_encryption_at_rest_enabled", "sqs_queues_server_side_encryption_enabled"], "prowler_check_id_status": "verified"}
+      ],
+      "required_capabilities": [
+        {"id": "secrets_management", "required_aspects": ["kms_or_vault_used", "hardcoded_secrets_absent", "cloud_credential_inline_absent"]},
+        {"id": "encryption_at_rest", "required_aspects": ["kms_rotation_enabled", "database_storage_encrypted", "ebs_encryption_default", "bucket_encryption_default", "messaging_encryption_at_rest"]}
+      ],
+      "evidence_hint": "키 회전 절차 문서 + 시크릿 매니저 사용 내역",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.24"
+                      ],
+                      "status": "verified",
+                      "note": "암호화 사용 (키 lifecycle 포함)"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.DS-01",
+                              "PR.DS-02"
+                      ],
+                      "status": "candidate",
+                      "note": "Cryptographic key management (data protection 내)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.1"
+                      ],
+                      "status": "verified",
+                      "note": "암호 키 관리"
+              }
+      }
+    },
+    {
+      "id": "2.8.1",
+      "name": "보안 요구사항 정의",
+      "category": "정보시스템 도입 및 개발 보안",
+      "auto_checkable": "no",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "manual_review", "access_tier": 0, "description": "요구사항 문서/JIRA 보안 라벨 외부 증적", "family": "security_requirements_doc", "required": false }
+      ],
+      "required_capabilities": [],
+      "evidence_hint": "PRD/Issue 트래커 보안 요구사항",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.25",
+                              "A.8.27"
+                      ],
+                      "status": "verified",
+                      "note": "안전한 개발 lifecycle + 보안 아키텍처 원칙"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.PS-06"
+                      ],
+                      "status": "verified",
+                      "note": "Secure software development practices"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC8.1"
+                      ],
+                      "status": "verified",
+                      "note": "변경관리 (보안 요구사항)"
+              }
+      }
+    },
+    {
+      "id": "2.8.2",
+      "name": "보안 요구사항 검토 및 시험",
+      "category": "정보시스템 도입 및 개발 보안",
+      "auto_checkable": "yes",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/.semgrep.{yml,yaml}", "description": "Semgrep SAST 설정 존재", "family": "sast_config_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/.snyk", "description": "Snyk 보안 스캔 설정 존재", "family": "sast_config_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/.github/workflows/*codeql*.{yml,yaml}", "description": "GitHub CodeQL 워크플로 존재", "family": "sast_config_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/.github/workflows/*{security,sast,scan}*.{yml,yaml}", "description": "보안 스캔 CI 워크플로 존재", "family": "sast_config_present", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "릴리스 전 보안 요구사항 검토·시험 결과서 (체크리스트, 펜테스트 보고서, 결함 조치 이력)", "family": "security_test_doc", "required": true }
+      ],
+      "required_capabilities": [],
+      "evidence_hint": "릴리스별 보안 점검 체크리스트 + 펜테스트/SAST 리포트",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.29",
+                              "A.8.28"
+                      ],
+                      "status": "verified",
+                      "note": "보안 시험 + 안전한 코딩"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.PS-06",
+                              "ID.RA-01"
+                      ],
+                      "status": "verified",
+                      "note": "Secure SDLC testing + vulnerability"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC8.1"
+                      ],
+                      "status": "verified",
+                      "note": "변경 전 테스트 및 승인"
+              }
+      }
+    },
+    {
+      "id": "2.8.3",
+      "name": "시험과 운영 환경 분리",
+      "category": "정보시스템 도입 및 개발 보안",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "infra", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "NODE_ENV|ENVIRONMENT|stage\\s*=\\s*['\"](dev|staging|prod)", "description": "환경 분리 변수 사용", "family": "env_separation_var", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/{terraform.tfvars,values-prod.yaml,values-dev.yaml}", "description": "환경별 설정 파일 분리", "family": "env_separation_files", "required": false }
+      ],
+      "required_capabilities": [],
+      "evidence_hint": "AWS 계정 분리 / VPC 분리 다이어그램",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.31"
+                      ],
+                      "status": "verified",
+                      "note": "개발·시험·운영 환경 분리"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.PS-06"
+                      ],
+                      "status": "candidate",
+                      "note": "Secure development (환경 분리는 SDLC 일부)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC8.1"
+                      ],
+                      "status": "verified",
+                      "note": "변경관리"
+              }
+      }
+    },
+    {
+      "id": "2.8.4",
+      "name": "시험 데이터 보안",
+      "category": "정보시스템 도입 및 개발 보안",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_absent", "access_tier": 0, "pattern": "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}", "paths": ["**/seed*.{sql,ts,js,py,rb,json}", "**/seeds/**", "**/fixtures/**", "**/test-data/**", "**/db/seed*"], "description": "시드/픽스처 데이터에 실제 이메일(추정) 부재 — 시험 데이터에 운영 PII 사용 금지", "family": "test_data_pii", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "01[016789][- ]?\\d{3,4}[- ]?\\d{4}|\\b\\d{6}[- ]?[1-4]\\d{6}\\b", "paths": ["**/seed*.{sql,ts,js,py,rb,json}", "**/seeds/**", "**/fixtures/**", "**/test-data/**", "**/db/seed*"], "description": "시드 데이터에 한국 휴대폰 번호 / 주민번호 패턴 부재", "family": "test_data_pii", "required": true },
+        { "type": "manual_review", "access_tier": 0, "description": "운영 데이터를 개발/스테이징으로 복제 시 가명·마스킹 절차 적용 증적", "family": "test_data_masking_doc", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "data_minimization", "required_aspects": ["sensitive_id_absent"] }
+      ],
+      "evidence_hint": "테스트 데이터 생성 SOP + 운영DB → 개발DB 복제 시 마스킹 스크립트",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.33"
+                      ],
+                      "status": "verified",
+                      "note": "시험 정보 보호"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.DS-01"
+                      ],
+                      "status": "partial",
+                      "note": "Data protection (시험 데이터에 적용)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC8.1",
+                              "P4.1"
+                      ],
+                      "status": "candidate",
+                      "note": "변경관리 + 개인정보 사용 제한"
+              }
+      }
+    },
+    {
+      "id": "2.8.5",
+      "name": "소스 프로그램 관리",
+      "category": "정보시스템 도입 및 개발 보안",
+      "auto_checkable": "yes",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "glob_exists", "access_tier": 0, "pattern": ".git", "description": "버전관리 시스템 사용", "family": "vcs_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "{.github/CODEOWNERS,CODEOWNERS}", "description": "코드 소유자 정의", "family": "codeowners_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": ".github/workflows/**", "description": "CI 파이프라인 존재", "family": "ci_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/.github/workflows/*.{yml,yaml}", "description": "CI 파이프라인(GitHub Actions) 존재", "family": "ci_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/.github/dependabot.{yml,yaml}", "description": "의존성 자동 업데이트 (Dependabot) 활성", "family": "dep_scan", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/renovate.{json,json5}", "description": "의존성 자동 업데이트 (Renovate) 활성", "family": "dep_scan", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "change_management", "required_aspects": ["vcs_and_codeowners", "ci_pipeline_present"] },
+        { "id": "patch_management", "required_aspects": ["dependency_audit_in_ci"] }
+      ],
+      "evidence_hint": "PR 리뷰 정책/branch protection 스크린샷",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.4",
+                              "A.8.30"
+                      ],
+                      "status": "verified",
+                      "note": "소스코드 접근 + 외주개발"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.PS-06",
+                              "PR.AA-05"
+                      ],
+                      "status": "verified",
+                      "note": "Secure development + access control"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC8.1"
+                      ],
+                      "status": "verified",
+                      "note": "변경관리 (소스 버전 관리)"
+              }
+      }
+    },
+    {
+      "id": "2.8.6",
+      "name": "운영환경 이관",
+      "category": "정보시스템 도입 및 개발 보안",
+      "auto_checkable": "partial",
+      "applicable_to": ["backend", "fullstack", "infra", "all"],
+      "signals": [
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/{CODEOWNERS,.github/CODEOWNERS}", "description": "CODEOWNERS 파일 존재 (PR 승인자 지정)", "family": "codeowners_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/.github/workflows/*{deploy,release,prod}*.{yml,yaml}", "description": "운영 배포 워크플로 분리 존재", "family": "deploy_workflow_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "environment:\\s*production|environment:\\s*prod|approvals:\\s*required", "paths": ["**/.github/workflows/*.{yml,yaml}", "**/.gitlab-ci.yml"], "description": "GitHub Actions environment protection / 승인 gate", "family": "deploy_approval_gate", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "운영환경 이관 시 변경관리 승인·롤백 절차·검증 결과서 (Sprint 3 의 gh api branch-protection 자동 검증과 보완)", "family": "deploy_approval_doc", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "change_management", "required_aspects": ["vcs_and_codeowners", "deploy_approval_gate"] }
+      ],
+      "evidence_hint": "릴리스 노트 + 배포 승인 티켓 + 롤백 시나리오 검증 기록",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.32"
+                      ],
+                      "status": "verified",
+                      "note": "변경관리"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.PS-06",
+                              "ID.AM-08"
+                      ],
+                      "status": "verified",
+                      "note": "Configuration baseline + change"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC8.1"
+                      ],
+                      "status": "verified",
+                      "note": "변경 승인·배포"
+              }
+      }
+    },
+    {
+      "id": "2.9.1",
+      "name": "변경관리",
+      "category": "시스템 및 서비스 운영관리",
+      "auto_checkable": "partial",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/CHANGELOG.{md,markdown,MD}", "description": "변경 이력 파일 (CHANGELOG.md) 존재", "family": "changelog_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/.github/release-please*.{yml,yaml,json}", "description": "release-please 자동 릴리스 설정", "family": "release_automation_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/.changeset/**", "description": "Changesets 변경관리 도구 사용", "family": "release_automation_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "tags:\\s*\\[?['\"]v[0-9]|on:\\s*push:\\s*tags:|release:\\s*types:", "paths": ["**/.github/workflows/*.{yml,yaml}", "**/.gitlab-ci.yml"], "description": "버전 태그 기반 릴리스 트리거", "family": "release_tag_trigger", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "운영 시스템 변경 시 영향도 평가·승인·테스트·이행 기록 (변경관리 티켓)", "family": "change_management_doc", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "change_management", "required_aspects": ["changelog_and_release"] }
+      ],
+      "evidence_hint": "변경관리 티켓 시스템 / 릴리스 노트 / 변경 영향도 평가서",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.32"
+                      ],
+                      "status": "verified",
+                      "note": "변경관리"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "ID.AM-08",
+                              "PR.PS-01"
+                      ],
+                      "status": "verified",
+                      "note": "Configuration management lifecycle"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC8.1"
+                      ],
+                      "status": "verified",
+                      "note": "변경관리 (TSC 핵심 통제)"
+              }
+      }
+    },
+    {
+      "id": "2.9.3",
+      "name": "백업 및 복구관리",
+      "category": "시스템 및 서비스 운영관리",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "infra", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "backup_retention_period|snapshot_retention|copy_tags_to_snapshot|backup[-_ ]?policy", "paths": ["**/*.tf", "**/*.yaml"], "description": "백업 보관기간/스냅샷 정책 IaC 정의", "family": "backup_iac_present", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "backup", "command": "aws rds describe-db-instances", "evaluator": "BackupRetentionPeriod >= 7 인 운영 DBInstance 비율 100%", "description": "런타임 RDS 백업 보관기간 7일 이상 (2.12.1 의 RDS 보강)", "family": "rds_backup_retention_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "rds_instance_backup_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "rds_instance_backup_enabled", "gcp": "cloudsql_instance_automated_backups"}, "cloud_provider": "multi"},
+        { "type": "cloud_api", "access_tier": 2, "domain": "backup", "command": "aws backup list-recovery-points-by-backup-vault --backup-vault-name <vault>", "evaluator": "최근 24시간 이내 생성된 RecoveryPoint 1개 이상", "description": "AWS Backup 최근 복원 포인트 존재 (백업 정상 동작)", "family": "backup_recovery_points_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": ["backup_recovery_point_encrypted", "backup_vaults_recovery_point_encrypted"], "prowler_check_id_status": "candidate", "comment": "복원 포인트 freshness 전용 prowler check 미존재 — 암호화 check 로 우회 검증" },
+        { "type": "manual_review", "access_tier": 0, "description": "복구 절차 모의 훈련 결과 (RTO/RPO 충족 여부) 외부 증적", "family": "backup_recovery_drill_doc", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "backup_recovery", "required_aspects": ["backup_iac_defined", "rds_backup_runtime", "aws_backup_plan_runtime", "dr_policy_documented"] }
+      ],
+      "evidence_hint": "백업 정책 + 복구 모의훈련 결과서 (반기 1회 이상)",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.13"
+                      ],
+                      "status": "verified",
+                      "note": "정보 백업"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.DS-11",
+                              "RC.RP-03"
+                      ],
+                      "status": "verified",
+                      "note": "Backup 생성·검증·복원"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "A1.2",
+                              "A1.3"
+                      ],
+                      "status": "verified",
+                      "note": "환경적 보호·복구 + 복구 시험"
+              }
+      }
+    },
+    {
+      "id": "2.9.4",
+      "name": "로그 및 접속기록 관리",
+      "category": "시스템 및 서비스 운영관리",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "infra", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "winston|pino|log4j|slf4j|zap|zerolog|cloudwatch|cloudtrail", "description": "로깅 라이브러리/서비스 사용", "family": "logging_lib_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "audit[-_ ]?log|access[-_ ]?log|admin[-_ ]?action", "description": "감사로그 명시적 분류", "family": "audit_log_classified", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "morgan|express[-_ ]?winston|access\\.log|alb_access_log|cloudfront_log", "description": "접속로그 수집", "family": "access_log_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "retention.*(365|730|1825)|retention_in_days\\s*=\\s*(365|730|1825)", "description": "1년 이상 보관 설정", "family": "log_retention_1y", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws cloudtrail describe-trails && aws cloudtrail get-trail-status --name <trail>", "evaluator": "최소 1개 trail 의 IsMultiRegionTrail == true AND IsLogging == true AND IncludeGlobalServiceEvents == true", "description": "런타임 멀티리전 CloudTrail 활성화", "family": "cloudtrail_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": ["cloudtrail_multi_region_enabled", "cloudtrail_log_file_validation_enabled", "cloudtrail_logs_s3_bucket_is_not_publicly_accessible", "cloudtrail_multi_region_enabled_logging_management_events"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["cloudtrail_multi_region_enabled", "cloudtrail_log_file_validation_enabled", "cloudtrail_logs_s3_bucket_is_not_publicly_accessible", "cloudtrail_multi_region_enabled_logging_management_events"], "gcp": ["iam_audit_logs_enabled", "logging_sink_created"], "azure": ["monitor_diagnostic_settings_exists", "monitor_diagnostic_setting_with_appropriate_categories", "monitor_storage_account_with_activity_logs_is_private", "monitor_storage_account_with_activity_logs_cmk_encrypted"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws s3api list-buckets && aws s3api get-bucket-logging --bucket <each>", "evaluator": "모든 사용자 정의 S3 버킷에 LoggingEnabled.TargetBucket 설정", "description": "S3 버킷 access logging 활성화", "family": "s3_access_log", "required": true, "fallback_tool": "prowler", "prowler_check_id": "s3_bucket_server_access_logging_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "s3_bucket_server_access_logging_enabled", "gcp": ["cloudstorage_bucket_logging_enabled", "cloudstorage_audit_logs_enabled"]}, "cloud_provider": "multi"},
+        { "type": "cluster_query", "access_tier": 3, "platform": "kubernetes", "command": "kubectl get pods -n kube-system -l component=kube-apiserver -o json", "evaluator": "kube-apiserver 인자에 --audit-log-path 와 --audit-policy-file 모두 설정", "description": "K8s 컨트롤플레인 audit log 활성", "family": "k8s_audit_log_runtime", "required": true, "fallback_tool": "kube-bench" },
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws ec2 describe-vpcs && aws ec2 describe-flow-logs", "evaluator": "운영 VPC 모두에 1개 이상 FlowLog 가 ResourceType=VPC 로 활성", "description": "VPC Flow Log 활성화", "family": "vpc_flow_log_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "vpc_flow_logs_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "vpc_flow_logs_enabled", "gcp": "compute_subnet_flow_logs_enabled", "azure": ["network_flow_log_captured_sent", "network_flow_log_more_than_90_days", "network_watcher_enabled"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws cloudtrail describe-trails --query 'trailList[].{Name:Name, LogValidation:LogFileValidationEnabled}'", "evaluator": "모든 trail 의 LogFileValidationEnabled == true (로그 무결성 보장)", "description": "CloudTrail 로그 파일 무결성 검증 활성", "family": "cloudtrail_log_validation_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "cloudtrail_log_file_validation_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "cloudtrail_log_file_validation_enabled", "gcp": "cloudstorage_bucket_log_retention_policy_lock", "azure": "monitor_storage_account_with_activity_logs_is_private"}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws logs describe-log-groups --query 'logGroups[].{Name:logGroupName, Kms:kmsKeyId}'", "evaluator": "모든 CloudWatch LogGroup 의 kmsKeyId 설정 (KMS 키로 암호화)", "description": "CloudWatch Log 그룹 KMS 암호화", "family": "cloudwatch_log_encryption_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": "cloudwatch_log_group_kms_encryption_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "cloudwatch_log_group_kms_encryption_enabled", "azure": "monitor_storage_account_with_activity_logs_cmk_encrypted"}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws logs describe-log-groups --query 'logGroups[].{Name:logGroupName, Retention:retentionInDays}'", "evaluator": "모든 LogGroup 의 retentionInDays >= 365 (1년 이상)", "description": "CloudWatch Log 보관기간 1년 이상", "family": "cloudwatch_log_retention_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "cloudwatch_log_group_retention_policy_specific_days_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "cloudwatch_log_group_retention_policy_specific_days_enabled", "gcp": "cloudstorage_bucket_sufficient_retention_period", "azure": "network_flow_log_more_than_90_days"}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws elbv2 describe-load-balancers && aws elbv2 describe-load-balancer-attributes --load-balancer-arn <arn>", "evaluator": "모든 ALB 의 access_logs.s3.enabled == 'true' AND access_logs.s3.bucket 설정", "description": "ALB Access Log 활성화", "family": "alb_access_log_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": "elbv2_logging_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "elbv2_logging_enabled", "gcp": "compute_loadbalancer_logging_enabled", "azure": "app_http_logs_enabled"}, "cloud_provider": "multi"}
+      ],
+      "required_capabilities": [
+        {"id": "audit_logging", "required_aspects": ["cloudtrail_runtime_enabled", "s3_access_log_enabled", "vpc_flow_log_enabled", "log_storage_encrypted", "lb_access_log_enabled"]},
+        {"id": "data_retention", "required_aspects": ["retention_policy_present"]}
+      ],
+      "evidence_hint": "로그 보관기간(1년 이상) 설정 캡처 + 로그 저장소 보관기간 정책",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.15"
+                      ],
+                      "status": "verified",
+                      "note": "Logging"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.PS-04",
+                              "DE.AE-03"
+                      ],
+                      "status": "verified",
+                      "note": "Log 생성·보호·집계"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC7.2"
+                      ],
+                      "status": "verified",
+                      "note": "이상행위 식별을 위한 로그"
+              }
+      }
+    },
+    {
+      "id": "2.9.5",
+      "name": "로그 및 접속기록 점검",
+      "category": "시스템 및 서비스 운영관리",
+      "auto_checkable": "partial",
+      "applicable_to": ["backend", "fullstack", "infra", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "alarm|alert|sentry|datadog|newrelic|prometheus", "description": "이상징후 알림 시스템", "family": "alert_system_present", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "주기적 로그 점검 리포트 외부 증적", "family": "log_review_doc", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "log_monitoring", "required_aspects": ["guardduty_or_alarm"] },
+        { "id": "audit_logging", "required_aspects": ["s3_access_log_enabled"] }
+      ],
+      "evidence_hint": "월간 로그 분석 리포트",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.15",
+                              "A.8.16"
+                      ],
+                      "status": "verified",
+                      "note": "Logging + Monitoring"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "DE.CM-01",
+                              "DE.CM-03",
+                              "DE.AE-02"
+                      ],
+                      "status": "verified",
+                      "note": "Networks·personnel 모니터링 + 분석"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC7.2",
+                              "CC7.3"
+                      ],
+                      "status": "verified",
+                      "note": "이상행위 평가·대응"
+              }
+      }
+    },
+    {
+      "id": "2.9.6",
+      "name": "시간 동기화",
+      "category": "시스템 및 서비스 운영관리",
+      "auto_checkable": "partial",
+      "applicable_to": ["backend", "infra", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "ntp|chrony|timesyncd|169\\.254\\.169\\.123", "paths": ["**/*.tf", "**/*.yaml", "**/*.yml", "**/cloud-init*", "**/userdata*"], "description": "NTP / Amazon Time Sync 설정 존재 (EC2 인스턴스인 경우)", "family": "time_sync_config_present", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "Lambda/ECS/Fargate 등 관리형 런타임은 시간 동기화 자동 — EC2/온프렘은 NTP 적용 증적 필요. 로그 timestamp 일관성 검증 권장", "family": "time_sync_review", "required": true }
+      ],
+      "required_capabilities": [],
+      "evidence_hint": "EC2 chrony 설정 / NTP 서버 동기화 상태 / 로그 timestamp 정합성 점검",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.17"
+                      ],
+                      "status": "verified",
+                      "note": "Clock synchronization"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.PS-04"
+                      ],
+                      "status": "candidate",
+                      "note": "Log records — accurate timestamp 의존성"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC7.2"
+                      ],
+                      "status": "candidate",
+                      "note": "신뢰성 있는 모니터링 (간접)"
+              }
+      }
+    },
+    {
+      "id": "2.10.1",
+      "name": "보안시스템 운영",
+      "category": "시스템 및 서비스 보안관리",
+      "auto_checkable": "yes",
+      "applicable_to": ["frontend", "backend", "fullstack", "infra", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "waf|aws_wafv2|cloudflare|guardduty|inspector", "description": "WAF/위협탐지 서비스 사용", "family": "waf_present", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "web_security", "required_aspects": ["waf_present"] }
+      ],
+      "evidence_hint": "WAF 룰셋/탐지 이벤트 캡처",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.7",
+                              "A.8.20",
+                              "A.8.23"
+                      ],
+                      "status": "verified",
+                      "note": "악성코드 방지 + 네트워크 보안 + 웹 필터링"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.PS-05",
+                              "DE.CM-01"
+                      ],
+                      "status": "verified",
+                      "note": "Malware 방어 + 네트워크 모니터링"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.6",
+                              "CC6.8"
+                      ],
+                      "status": "verified",
+                      "note": "외부 위협 차단 + 악성SW 방지"
+              }
+      }
+    },
+    {
+      "id": "2.10.2",
+      "name": "클라우드 보안",
+      "category": "시스템 및 서비스 보안관리",
+      "auto_checkable": "yes",
+      "applicable_to": ["infra", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "aws_securityhub|aws_guardduty|aws_config_configuration_recorder|aws_cloudtrail", "paths": ["**/*.tf"], "description": "Security Hub / GuardDuty / Config / CloudTrail IaC 정의", "family": "cloud_security_baseline_iac", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws securityhub describe-hub", "evaluator": "Hub 가 활성 상태 (HubArn 반환)", "description": "AWS Security Hub 활성화", "family": "securityhub_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "securityhub_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "securityhub_enabled", "azure": ["defender_ensure_defender_for_server_is_on", "defender_ensure_defender_for_storage_is_on", "defender_ensure_defender_for_sql_servers_is_on", "defender_ensure_defender_for_keyvault_is_on", "defender_ensure_defender_for_arm_is_on", "defender_ensure_defender_for_app_services_is_on", "defender_ensure_defender_for_containers_is_on", "defender_ensure_defender_for_databases_is_on", "defender_ensure_defender_for_dns_is_on"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws guardduty list-detectors && aws guardduty get-detector --detector-id <id>", "evaluator": "최소 1개 detector 의 Status == ENABLED", "description": "AWS GuardDuty 위협 탐지 활성", "family": "guardduty_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": ["guardduty_is_enabled", "guardduty_no_high_severity_findings"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["guardduty_is_enabled", "guardduty_no_high_severity_findings"], "azure": ["defender_ensure_defender_for_server_is_on", "defender_assessments_vm_endpoint_protection_installed", "defender_attack_path_notifications_properly_configured"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws configservice describe-configuration-recorders && aws configservice describe-configuration-recorder-status", "evaluator": "1개 이상 recorder 의 recording == true AND lastStatus == SUCCESS", "description": "AWS Config 구성 변경 기록 활성", "family": "awsconfig_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": ["config_recorder_all_regions_enabled"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["config_recorder_all_regions_enabled"], "gcp": "iam_cloud_asset_inventory_enabled", "azure": "policy_ensure_asc_enforcement_enabled"}, "cloud_provider": "multi"}
+      ],
+      "required_capabilities": [
+        { "id": "log_monitoring", "required_aspects": ["guardduty_or_alarm"] },
+        { "id": "audit_logging", "required_aspects": ["cloudtrail_runtime_enabled"] }
+      ],
+      "evidence_hint": "Security Hub 콘솔 캡처 + GuardDuty 탐지 이벤트 + Config 컴플라이언스 대시보드",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.23"
+                      ],
+                      "status": "verified",
+                      "note": "클라우드 서비스 사용 보안"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.SC-07",
+                              "ID.AM-04"
+                      ],
+                      "status": "verified",
+                      "note": "Supplier risk + 자산 관리"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC9.2",
+                              "CC6.6"
+                      ],
+                      "status": "verified",
+                      "note": "벤더 관리 + 외부 시스템 통제"
+              }
+      }
+    },
+    {
+      "id": "2.10.3",
+      "name": "공개서버 보안",
+      "category": "시스템 및 서비스 보안관리",
+      "auto_checkable": "yes",
+      "applicable_to": ["frontend", "fullstack", "infra", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "aws_wafv2_web_acl|aws_wafv2_web_acl_association|aws_cloudfront_distribution.*web_acl_id", "paths": ["**/*.tf"], "description": "WAFv2 ACL 정의 + CloudFront/ALB 연결 IaC", "family": "waf_iac_present", "required": false },
+        { "type": "cloud_api", "access_tier": 2, "domain": "network", "command": "aws cloudfront list-distributions && aws wafv2 list-web-acls --scope CLOUDFRONT", "evaluator": "Enabled == true 인 CloudFront 배포 중 WebACLId 가 비어있는 배포 0건", "description": "런타임 모든 CloudFront 배포에 WAF 연결", "family": "cloudfront_waf_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": ["cloudfront_distributions_using_waf", "wafv2_webacl_logging_enabled"], "prowler_check_id_status": "verified" },
+        { "type": "cloud_api", "access_tier": 2, "domain": "network", "command": "aws elbv2 describe-load-balancers && aws wafv2 list-resources-for-web-acl --web-acl-arn <arn> --resource-type APPLICATION_LOAD_BALANCER", "evaluator": "internet-facing ALB 중 WAF ACL 미연결 0건", "description": "인터넷 노출 ALB 에 WAF 연결", "family": "alb_waf_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": ["elbv2_waf_acl_attached"], "prowler_check_id_status": "verified" }
+      ],
+      "required_capabilities": [
+        { "id": "encryption_in_transit", "required_aspects": ["cloudfront_tls_modern"] },
+        { "id": "web_security", "required_aspects": ["waf_present", "cloudfront_waf_runtime", "alb_waf_runtime"] }
+      ],
+      "evidence_hint": "WAF 룰셋 (OWASP Top 10 / 봇 차단) + 차단 통계 / 공개서버 자산 목록",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.23",
+                              "A.8.26"
+                      ],
+                      "status": "verified",
+                      "note": "웹 필터링 + 응용서비스 보안"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.IR-01",
+                              "PR.PS-01"
+                      ],
+                      "status": "verified",
+                      "note": "Network 분리 + secure configuration"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.6"
+                      ],
+                      "status": "verified",
+                      "note": "외부 노출 시스템 보안"
+              }
+      }
+    },
+    {
+      "id": "2.10.4",
+      "name": "전자거래 및 핀테크 보안",
+      "category": "시스템 및 서비스 보안관리",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "infra", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "tls\\s*1\\.[23]|ssl_protocols.*TLSv1\\.[23]|min_protocol.*TLS", "description": "TLS 1.2 이상 강제", "family": "tls_strong_present", "required": false },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "ssl_protocols.*TLSv1\\.0|tls\\s*1\\.0", "description": "TLS 1.0 미사용", "family": "tls_weak", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "encryption_in_transit", "required_aspects": ["weak_cipher_absent", "alb_tls_modern"] }
+      ],
+      "evidence_hint": "ALB/CloudFront TLS 정책",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.26",
+                              "A.5.34"
+                      ],
+                      "status": "verified",
+                      "note": "응용서비스 보안 + 개인정보 보호"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.DS-02",
+                              "PR.PS-06"
+                      ],
+                      "status": "candidate",
+                      "note": "Transaction 보호 (data-in-transit + secure dev)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "PI1.1",
+                              "PI1.2",
+                              "PI1.3"
+                      ],
+                      "status": "verified",
+                      "note": "Processing integrity (거래 무결성)"
+              }
+      }
+    },
+    {
+      "id": "2.10.5",
+      "name": "정보전송 보안",
+      "category": "시스템 및 서비스 보안관리",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "infra", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "aws:SecureTransport|enforce_https\\s*=\\s*true|TLS_REQUIRED|require_ssl|sslmode\\s*=\\s*['\"]?(require|verify-full)|forceSSL", "paths": ["**/*.tf", "**/*.json", "**/*.yaml", "**/*.yml"], "description": "전송 암호화 강제 (S3 SecureTransport / DB sslmode=require / forceSSL) 설정 IaC 존재", "family": "transport_encryption_iac", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "rejectUnauthorized\\s*[:=]\\s*true|tls\\.connect|https://|HSTS|Strict-Transport-Security", "description": "외부 통신 TLS 사용 / HSTS 헤더 설정", "family": "transport_encryption_app", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "외부기관·서비스 간 정보 전송 시 암호화 / 무결성 검증 적용 협약 (위탁 계약, API 명세서)", "family": "external_transport_doc", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "encryption_in_transit", "required_aspects": ["tls_verify_enabled", "weak_cipher_absent"] }
+      ],
+      "evidence_hint": "외부 시스템 연동 인터페이스 명세서 + TLS 설정 캡처 + 위수탁 계약서",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.14",
+                              "A.8.24"
+                      ],
+                      "status": "verified",
+                      "note": "정보 전송 + 암호화"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.DS-02"
+                      ],
+                      "status": "verified",
+                      "note": "Data-in-transit 보호"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC6.7"
+                      ],
+                      "status": "verified",
+                      "note": "전송 중 데이터 보호"
+              }
+      }
+    },
+    {
+      "id": "2.10.8",
+      "name": "패치관리",
+      "category": "시스템 및 서비스 보안관리",
+      "auto_checkable": "yes",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/{package-lock.json,yarn.lock,pnpm-lock.yaml,Pipfile.lock,poetry.lock,go.sum,Gemfile.lock,Cargo.lock}", "description": "의존성 lockfile 존재 (재현 가능 빌드)", "family": "lockfile_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "npm[-_ ]?audit|pnpm[-_ ]?audit|yarn[-_ ]?audit|pip[-_ ]?audit|bundle[-_ ]?audit|govulncheck", "paths": ["**/.github/workflows/*.{yml,yaml}", "**/.gitlab-ci.yml", "**/package.json", "**/Makefile"], "description": "CI 에서 의존성 audit 실행", "family": "dep_audit_ci", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "auto[-_ ]?update|patch[-_ ]?policy|systems[-_ ]?manager.*patch|aws_ssm_patch_baseline", "paths": ["**/*.tf", "**/*.yaml", "**/*.md"], "description": "OS/AMI 자동 패치 정책 (SSM Patch Manager / Auto Update)", "family": "patch_baseline_present", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "정기 패치 적용 주기 / 긴급 패치(Critical/High) SLA 절차 외부 증적", "family": "patch_policy_doc", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "vuln", "command": "aws inspector2 batch-get-account-status --account-ids <self>", "evaluator": "Inspector v2 의 ec2 / ecr / lambda 스캔 모두 ENABLED", "description": "Inspector v2 활성 (취약점 자동 스캔)", "family": "inspector_v2_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": null, "prowler_check_id_status": "candidate", "comment": "prowler 5.x 에 inspector2 enabled 전용 check 없음 — direct CLI 평가", "prowler_check_id_by_cloud": {"gcp": ["artifacts_container_analysis_enabled", "gcr_container_scanning_enabled"], "azure": ["defender_ensure_defender_for_containers_is_on", "defender_container_images_scan_enabled", "defender_auto_provisioning_vulnerabilty_assessments_machines_on"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "vuln", "command": "aws inspector2 list-findings --filter-criteria '{\"severity\":[{\"comparison\":\"EQUALS\",\"value\":\"HIGH\"},{\"comparison\":\"EQUALS\",\"value\":\"CRITICAL\"}]}'", "evaluator": "Inspector v2 High/Critical 미해결 finding 0건 또는 SLA 내 처리 (30일 이내)", "description": "Inspector v2 High/Critical 미해결 finding 부재", "family": "inspector_findings_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": null, "prowler_check_id_status": "candidate", "comment": "prowler 5.x 에 active findings 전용 check 없음 — direct CLI 평가", "prowler_check_id_by_cloud": {"azure": ["defender_container_images_resolved_vulnerabilities", "defender_ensure_system_updates_are_applied"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "vuln", "command": "aws ecr describe-repositories --query 'repositories[].{Name:repositoryName, Scan:imageScanningConfiguration.scanOnPush}'", "evaluator": "모든 ECR repository 의 imageScanningConfiguration.scanOnPush == true", "description": "ECR scan on push 활성", "family": "ecr_scan_on_push_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": "ecr_repositories_scan_images_on_push_enabled", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "ecr_repositories_scan_images_on_push_enabled", "gcp": ["artifacts_container_analysis_enabled", "gcr_container_scanning_enabled"], "azure": "defender_container_images_scan_enabled"}, "cloud_provider": "multi"}
+      ],
+      "required_capabilities": [
+        {"id": "patch_management", "required_aspects": ["dependency_lockfile", "dependency_audit_in_ci", "patch_baseline_iac", "vulnerability_scanner_enabled"]}
+      ],
+      "evidence_hint": "월간 패치 적용 보고서 + Critical CVE 대응 이력 / SSM Patch Manager 컴플라이언스",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.8"
+                      ],
+                      "status": "verified",
+                      "note": "기술적 취약점 관리"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "ID.RA-01",
+                              "ID.RA-06"
+                      ],
+                      "status": "verified",
+                      "note": "Vulnerability 식별 + 대응"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC7.1"
+                      ],
+                      "status": "verified",
+                      "note": "취약점 식별·평가·패치"
+              }
+      }
+    },
+    {
+      "id": "2.11.1",
+      "name": "사고 예방 및 대응체계 구축",
+      "category": "사고 예방 및 대응",
+      "auto_checkable": "partial",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/{INCIDENT.md,INCIDENT_RESPONSE.md,incident-response.md}", "description": "사고 대응 문서 존재", "family": "incident_response_doc", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/{runbook,runbooks,playbook,playbooks}/**", "description": "runbook / playbook 디렉터리 존재", "family": "runbook_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/docs/{incident,oncall,sre}/**", "description": "온콜/SRE 문서 디렉터리", "family": "runbook_present", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "침해사고·개인정보 유출 사고 대응 조직·연락망·보고체계·외부기관(KISA/PIPC) 신고 절차", "family": "incident_org_doc", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "incident_response", "required_aspects": ["runbook_present", "external_evidence_only"] }
+      ],
+      "evidence_hint": "사고 대응 매뉴얼 + 비상연락망 + 신고 의무기관 연락처",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.24",
+                              "A.5.26"
+                      ],
+                      "status": "verified",
+                      "note": "사고 대응 계획·준비"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "RS.MA-01",
+                              "RS.MA-02"
+                      ],
+                      "status": "verified",
+                      "note": "Incident management 계획·실행"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC7.3",
+                              "CC7.4"
+                      ],
+                      "status": "verified",
+                      "note": "사고 대응 정책·절차"
+              }
+      }
+    },
+    {
+      "id": "2.11.2",
+      "name": "취약점 점검 및 조치",
+      "category": "사고 예방 및 대응",
+      "auto_checkable": "yes",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "glob_exists", "access_tier": 0, "pattern": "{.github/workflows/**,.gitlab-ci.yml}", "description": "CI 존재", "family": "ci_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "snyk|trivy|grype|dependabot|renovate|npm[-_ ]audit|pip[-_ ]audit", "description": "의존성 취약점 스캐너 사용", "family": "dep_scanner_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/.github/workflows/*.{yml,yaml}", "description": "CI 파이프라인(GitHub Actions) 존재", "family": "ci_present", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/.github/dependabot.{yml,yaml}", "description": "의존성 자동 업데이트 (Dependabot) 활성", "family": "dep_scan", "required": false },
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/renovate.{json,json5}", "description": "의존성 자동 업데이트 (Renovate) 활성", "family": "dep_scan", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "patch_management", "required_aspects": ["dependency_audit_in_ci"] },
+        { "id": "change_management", "required_aspects": ["ci_pipeline_present"] }
+      ],
+      "evidence_hint": "월간 취약점 점검 리포트",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.8",
+                              "A.8.29"
+                      ],
+                      "status": "verified",
+                      "note": "기술적 취약점 관리 + 보안 시험"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "ID.RA-01",
+                              "ID.RA-06"
+                      ],
+                      "status": "verified",
+                      "note": "Vulnerability 식별·priority"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC4.1",
+                              "CC7.1"
+                      ],
+                      "status": "verified",
+                      "note": "통제 평가 + 취약점 식별"
+              }
+      }
+    },
+    {
+      "id": "2.11.3",
+      "name": "이상행위 분석 및 모니터링",
+      "category": "사고 예방 및 대응",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "infra", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "aws_cloudwatch_metric_alarm|aws_cloudwatch_log_metric_filter|aws_guardduty_detector|aws_securityhub_account|aws_sns_topic", "paths": ["**/*.tf"], "description": "CloudWatch 알람 / GuardDuty / SecurityHub / SNS IaC 정의", "family": "monitoring_iac_present", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws guardduty list-findings --detector-id <id> --finding-criteria '{\"Criterion\":{\"severity\":{\"Gte\":7}}}'", "evaluator": "최근 30일 내 미해결 High/Critical finding 0건 (또는 조치 대장 보유)", "description": "GuardDuty High/Critical 미해결 탐지 0건", "family": "guardduty_findings_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": "guardduty_no_high_severity_findings", "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": "guardduty_no_high_severity_findings", "azure": ["defender_ensure_notify_alerts_severity_is_high", "defender_ensure_notify_emails_to_owners"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws cloudwatch describe-alarms --state-value ALARM", "evaluator": "ALARM 상태 알람 0건 또는 운영 중인 alarm 1개 이상 존재", "description": "CloudWatch 이상징후 알람 운영", "family": "cloudwatch_alarm_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": ["cloudwatch_changes_to_network_acls_alarm_configured", "cloudwatch_changes_to_network_gateways_alarm_configured", "cloudwatch_changes_to_network_route_tables_alarm_configured", "cloudwatch_changes_to_vpcs_alarm_configured", "cloudwatch_log_metric_filter_unauthorized_api_calls"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["cloudwatch_changes_to_network_acls_alarm_configured", "cloudwatch_changes_to_network_gateways_alarm_configured", "cloudwatch_changes_to_network_route_tables_alarm_configured", "cloudwatch_changes_to_vpcs_alarm_configured", "cloudwatch_log_metric_filter_unauthorized_api_calls"], "gcp": ["logging_log_metric_filter_and_alert_for_audit_configuration_changes_enabled", "logging_log_metric_filter_and_alert_for_bucket_permission_changes_enabled", "logging_log_metric_filter_and_alert_for_compute_configuration_changes_enabled", "logging_log_metric_filter_and_alert_for_custom_role_changes_enabled", "logging_log_metric_filter_and_alert_for_project_ownership_changes_enabled", "logging_log_metric_filter_and_alert_for_sql_instance_configuration_changes_enabled", "logging_log_metric_filter_and_alert_for_vpc_firewall_rule_changes_enabled", "logging_log_metric_filter_and_alert_for_vpc_network_changes_enabled", "logging_log_metric_filter_and_alert_for_vpc_network_route_changes_enabled"], "azure": ["monitor_alert_create_update_nsg", "monitor_alert_delete_nsg", "monitor_alert_create_update_public_ip_address_rule", "monitor_alert_delete_public_ip_address_rule", "monitor_alert_create_policy_assignment", "monitor_alert_delete_policy_assignment", "monitor_alert_create_update_sqlserver_fr", "monitor_alert_delete_sqlserver_fr", "monitor_alert_create_update_security_solution", "monitor_alert_delete_security_solution", "monitor_alert_service_health_exists"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws securityhub get-findings --filters '{\"SeverityLabel\":[{\"Value\":\"HIGH\",\"Comparison\":\"EQUALS\"},{\"Value\":\"CRITICAL\",\"Comparison\":\"EQUALS\"}],\"WorkflowStatus\":[{\"Value\":\"NEW\",\"Comparison\":\"EQUALS\"}]}'", "evaluator": "WorkflowStatus=NEW + Severity=HIGH/CRITICAL finding 0건 또는 SLA 내 처리", "description": "Security Hub High/Critical 미해결 finding 부재", "family": "securityhub_findings_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": null, "prowler_check_id_status": "candidate", "comment": "prowler 5.x 에 SH active findings 전용 check 없음 — direct CLI 평가"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "logging", "command": "aws events list-rules --query 'Rules[?starts_with(EventPattern, `{`)].{Name:Name, Pattern:EventPattern}'", "evaluator": "보안 이벤트 (e.g., RootAccountUsage, ConsoleLogin, UnauthorizedAPICall) 패턴의 EventBridge rule 1개 이상", "description": "EventBridge 보안 이벤트 룰 (root 사용 등 알람용)", "family": "eventbridge_security_rule_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": null, "prowler_check_id_status": "candidate", "comment": "prowler 5.x 에 EventBridge 보안 룰 전용 check 없음 — direct CLI 평가", "prowler_check_id_by_cloud": {"gcp": "logging_log_metric_filter_and_alert_for_audit_configuration_changes_enabled", "azure": "monitor_alert_service_health_exists"}, "cloud_provider": "multi"}
+      ],
+      "required_capabilities": [
+        { "id": "log_monitoring", "required_aspects": ["guardduty_or_alarm"] }
+      ],
+      "evidence_hint": "이상징후 탐지 룰셋 + 알람 통계 + 사고 분석 리포트",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.16"
+                      ],
+                      "status": "verified",
+                      "note": "Monitoring activities"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "DE.AE-02",
+                              "DE.AE-03",
+                              "DE.CM-01",
+                              "DE.CM-03"
+                      ],
+                      "status": "verified",
+                      "note": "이상행위 탐지·분석"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC7.2"
+                      ],
+                      "status": "verified",
+                      "note": "이상행위 모니터링"
+              }
+      }
+    },
+    {
+      "id": "2.11.4",
+      "name": "사고 대응 훈련 및 개선",
+      "category": "사고 예방 및 대응",
+      "auto_checkable": "no",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "manual_review", "access_tier": 0, "description": "연 1회 이상 침해사고 대응 모의 훈련 / 사후 검토 (lessons learned) 결과 보고서", "family": "incident_drill_doc", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "incident_response", "required_aspects": ["external_evidence_only"] }
+      ],
+      "evidence_hint": "사고 대응 훈련 시나리오 + 훈련 결과 보고서 + 개선과제 이행 이력",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.27"
+                      ],
+                      "status": "verified",
+                      "note": "사고 학습"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "ID.IM-02",
+                              "ID.IM-04"
+                      ],
+                      "status": "verified",
+                      "note": "Incident response 훈련·improvement"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC4.2",
+                              "CC7.5"
+                      ],
+                      "status": "verified",
+                      "note": "결함 식별·개선 + 사고 복구"
+              }
+      }
+    },
+    {
+      "id": "2.11.5",
+      "name": "사고 대응 및 복구",
+      "category": "사고 예방 및 대응",
+      "auto_checkable": "no",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "manual_review", "access_tier": 0, "description": "실제 침해사고/개인정보 유출 발생 시 법적 통지·신고(KISA·PIPC·정보주체) 의무 이행 + 복구·재발방지 대책 수립 이력. 무사고 시 '無' 보고", "family": "incident_response_log", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "incident_response", "required_aspects": ["external_evidence_only"] }
+      ],
+      "evidence_hint": "사고 대응 보고서 (사고 발생 시) / 정보주체 통지 메일 / 신고 접수증",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.26",
+                              "A.5.28"
+                      ],
+                      "status": "verified",
+                      "note": "사고 대응 + 증거 수집"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "RS.MA-03",
+                              "RS.MI-01",
+                              "RS.MI-02",
+                              "RC.RP-01"
+                      ],
+                      "status": "verified",
+                      "note": "Categorize·mitigate·recover"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC7.4",
+                              "CC7.5"
+                      ],
+                      "status": "verified",
+                      "note": "사고 대응 + 복구"
+              }
+      }
+    },
+    {
+      "id": "2.12.1",
+      "name": "재해·재난 대비 안전조치",
+      "category": "재해복구",
+      "auto_checkable": "yes",
+      "applicable_to": ["infra", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "backup_retention_period|snapshot|cross[-_ ]?region|multi[-_ ]?az", "paths": ["**/*.tf", "**/*.yaml"], "description": "백업/이중화 설정", "family": "backup_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "rpo|rto|disaster[-_ ]?recovery|dr[-_ ]?plan", "description": "DR 정책 명시", "family": "dr_policy_present", "required": false },
+        {"type": "cloud_api", "access_tier": 2, "domain": "backup", "command": "aws rds describe-db-instances", "evaluator": "프로덕션 DBInstance 의 BackupRetentionPeriod >= 7 AND MultiAZ == true", "description": "런타임 RDS 백업 보관기간 7일 이상 + 다중 AZ", "family": "rds_backup_runtime", "required": true, "fallback_tool": "prowler", "prowler_check_id": ["rds_instance_backup_enabled", "rds_instance_multi_az", "rds_cluster_multi_az"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["rds_instance_backup_enabled", "rds_instance_multi_az", "rds_cluster_multi_az"], "gcp": "cloudsql_instance_automated_backups", "azure": ["vm_backup_enabled", "vm_sufficient_daily_backup_retention_period", "storage_geo_redundant_enabled"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "backup", "command": "aws backup list-backup-plans && aws backup list-backup-selections --backup-plan-id <id>", "evaluator": "AWS Backup plan 1개 이상 + 핵심 자산 (RDS/EBS/EFS) 매핑", "description": "AWS Backup 플랜 등록 여부", "family": "aws_backup_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": ["backup_plans_exist", "backup_vaults_exist", "rds_instance_protected_by_backup_plan", "ec2_ebs_volume_protected_by_backup_plan"], "prowler_check_id_status": "verified", "prowler_check_id_by_cloud": {"aws": ["backup_plans_exist", "backup_vaults_exist", "rds_instance_protected_by_backup_plan", "ec2_ebs_volume_protected_by_backup_plan"], "azure": ["vm_backup_enabled", "vm_sufficient_daily_backup_retention_period"]}, "cloud_provider": "multi"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "backup", "command": "aws rds describe-db-instances --query 'DBInstances[].{Id:DBInstanceIdentifier, MultiAZ:MultiAZ}'", "evaluator": "운영 DBInstance 의 MultiAZ == true 비율 100%", "description": "RDS Multi-AZ 배포 (가용성·재해복구)", "family": "rds_multi_az_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": "rds_instance_multi_az", "prowler_check_id_status": "verified"},
+        {"type": "cloud_api", "access_tier": 2, "domain": "backup", "command": "aws dynamodb list-tables && aws dynamodb describe-continuous-backups --table-name <name>", "evaluator": "운영 DynamoDB 테이블의 ContinuousBackupsStatus == 'ENABLED' AND PointInTimeRecoveryDescription.PointInTimeRecoveryStatus == 'ENABLED'", "description": "DynamoDB Point-in-time Recovery 활성", "family": "dynamodb_pitr_runtime", "required": false, "fallback_tool": "prowler", "prowler_check_id": "dynamodb_tables_pitr_enabled", "prowler_check_id_status": "verified"}
+      ],
+      "required_capabilities": [
+        {"id": "backup_recovery", "required_aspects": ["backup_iac_defined", "rds_backup_runtime", "aws_backup_plan_runtime", "dr_policy_documented", "database_high_availability"]}
+      ],
+      "evidence_hint": "DR 모의훈련 결과 문서",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.29",
+                              "A.5.30",
+                              "A.8.14"
+                      ],
+                      "status": "verified",
+                      "note": "BCP + ICT readiness + 시스템 이중화"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "RC.RP-01",
+                              "RC.RP-02",
+                              "PR.IR-04"
+                      ],
+                      "status": "verified",
+                      "note": "Recovery 계획 + resilience"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "A1.2",
+                              "A1.3"
+                      ],
+                      "status": "verified",
+                      "note": "환경적 보호·BCP·DR 시험"
+              }
+      }
+    },
+    {
+      "id": "3.1.1",
+      "name": "개인정보 수집·이용",
+      "category": "개인정보 수집 시 보호조치",
+      "auto_checkable": "partial",
+      "applicable_to": ["frontend", "backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "consent|agree|terms|privacy[-_ ]?policy", "description": "동의 처리 로직 존재", "family": "consent_logic_present", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "개인정보 처리방침 게시 화면 외부 증적", "family": "privacy_policy_doc", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "(?i)(datadog|amplitude|segment|posthog|mixpanel|fullstory|hotjar|logrocket|new\\s*relic|google-?analytics|gtag|googleTagManager)\\b", "paths": ["**/*.{ts,tsx,js,jsx,py,go}", "**/package.json"], "description": "외부 SaaS 위탁 인지 (stack-agnostic — Sentry 전용은 stacks/official/sentry.json) — 처리방침 위탁 매트릭스 명시 필요", "family": "external_saas_dependency", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "data_minimization", "required_aspects": ["consent_logic"] },
+        { "id": "third_party_disclosure", "required_aspects": ["external_saas_inventory", "overseas_transfer_disclosure"] }
+      ],
+      "evidence_hint": "동의 화면 캡처 + 개인정보 처리방침 URL",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.34"
+                      ],
+                      "status": "verified",
+                      "note": "PII 프라이버시 보호 (27701 연계)"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.OC-03"
+                      ],
+                      "status": "candidate",
+                      "note": "법적·규제 요구사항 (CSF 프라이버시 상세 부재)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P2.1",
+                              "P3.1",
+                              "P3.2"
+                      ],
+                      "status": "verified",
+                      "note": "고지·동의·수집"
+              }
+      }
+    },
+    {
+      "id": "3.1.2",
+      "name": "개인정보 수집 제한",
+      "category": "개인정보 수집 시 보호조치",
+      "auto_checkable": "partial",
+      "applicable_to": ["frontend", "backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "resident[-_ ]?number|jumin|ssn|주민등록번호", "description": "민감 식별정보 수집 의심 패턴", "family": "pii_sensitive_id", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "수집 항목 최소화 검토 외부 증적", "family": "pii_minimization_doc", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "data_minimization", "required_aspects": ["sensitive_id_absent"] }
+      ],
+      "evidence_hint": "수집 항목 최소화 검토 회의록",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.34"
+                      ],
+                      "status": "verified",
+                      "note": "PII 보호 — 최소 수집"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.OC-03"
+                      ],
+                      "status": "partial",
+                      "note": "프라이버시 법적 요구"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P3.1",
+                              "P3.2"
+                      ],
+                      "status": "verified",
+                      "note": "수집 — 필요한 PII 만"
+              }
+      }
+    },
+    {
+      "id": "3.2.1",
+      "name": "개인정보 현황관리",
+      "category": "개인정보 보유 및 이용 시 보호조치",
+      "auto_checkable": "partial",
+      "applicable_to": ["backend", "fullstack", "all"],
+      "signals": [
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/{privacy-inventory,personal-info-inventory,개인정보처리현황}.{md,csv,xlsx,yaml,json}", "description": "개인정보 처리 현황 목록 파일 존재", "family": "privacy_inventory_file", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "처리방침의 보유 항목 vs DB 컬럼 매핑 정합성 — LLM 본문 분석 (v0.5 의 llm_review type 으로 자동화 예정). 현재는 수기 검증", "family": "privacy_inventory_review", "required": true }
+      ],
+      "required_capabilities": [],
+      "evidence_hint": "개인정보 처리 현황표 + DB 스키마 매핑 + 정기 갱신 이력",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.9",
+                              "A.5.34"
+                      ],
+                      "status": "verified",
+                      "note": "정보 목록 + PII 처리 기록"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "ID.AM-07"
+                      ],
+                      "status": "verified",
+                      "note": "Data inventory (privacy)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P1.1"
+                      ],
+                      "status": "verified",
+                      "note": "프라이버시 고지 — 처리 현황 공개"
+              }
+      }
+    },
+    {
+      "id": "3.2.2",
+      "name": "개인정보 품질보장",
+      "category": "개인정보 보유 및 이용 시 보호조치",
+      "auto_checkable": "no",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "manual_review", "access_tier": 0, "description": "개인정보의 정확성·완전성·최신성 보장 절차 (정정·갱신 요청 처리 SOP, 데이터 품질 모니터링)", "family": "privacy_quality_doc", "required": true }
+      ],
+      "required_capabilities": [],
+      "evidence_hint": "정정 요청 처리 통계 + 데이터 품질 점검 리포트",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.34"
+                      ],
+                      "status": "verified",
+                      "note": "PII 정확성"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.DS-01"
+                      ],
+                      "status": "partial",
+                      "note": "Data integrity (정확성)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P5.1",
+                              "PI1.4"
+                      ],
+                      "status": "verified",
+                      "note": "정보주체 정정 권리 + 처리 정확성"
+              }
+      }
+    },
+    {
+      "id": "3.2.3",
+      "name": "이용자 단말기 접근 보호",
+      "category": "개인정보 보유 및 이용 시 보호조치",
+      "auto_checkable": "yes",
+      "applicable_to": ["frontend", "fullstack", "mobile", "all"],
+      "signals": [
+        { "type": "grep_absent", "access_tier": 0, "pattern": "localStorage\\.setItem\\([^)]*?(email|phone|password|token|access_token|refresh_token|jumin|ssn|resident)", "paths": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.vue"], "description": "프론트엔드 localStorage 에 PII/토큰 저장 부재", "family": "frontend_pii_storage", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "sessionStorage\\.setItem\\([^)]*?(email|phone|password|jumin|ssn|resident)", "paths": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.vue"], "description": "프론트엔드 sessionStorage 에 PII 저장 부재", "family": "frontend_pii_storage", "required": true },
+        { "type": "grep_absent", "access_tier": 0, "pattern": "document\\.cookie\\s*=\\s*['\"][^;]*(email=|phone=|jumin=|ssn=|resident=)", "paths": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.vue"], "description": "쿠키에 PII 평문 저장 부재", "family": "frontend_pii_storage", "required": true },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "(android\\.permission|ios.*Permission|requestPermission|<uses-permission)", "paths": ["**/AndroidManifest.xml", "**/Info.plist", "**/*.ts", "**/*.tsx", "**/*.kt", "**/*.swift"], "description": "모바일 단말기 접근권한 요청 코드 (요청 시 동의 메시지 명확성 수기 검증 필요)", "family": "mobile_permission_request", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "이용자 단말기(모바일 앱) 접근권한 요청 시 정보주체에게 명확히 알리고 동의 받는 절차 — 정보통신망법 §22조의2", "family": "mobile_permission_consent_doc", "required": false }
+      ],
+      "required_capabilities": [],
+      "evidence_hint": "모바일 앱 권한 요청 화면 캡처 + 필수/선택 권한 분리 + 거부 시 서비스 제공 거부 부재 증적",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.1",
+                              "A.5.34"
+                      ],
+                      "status": "candidate",
+                      "note": "엔드포인트 + PII (모바일 앱 권한 부분 매핑)"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.AA-05",
+                              "PR.PS-01"
+                      ],
+                      "status": "candidate",
+                      "note": "Access management + secure configuration"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P3.2"
+                      ],
+                      "status": "candidate",
+                      "note": "수집 시 동의 (앱 권한 동의)"
+              }
+      }
+    },
+    {
+      "id": "3.2.4",
+      "name": "개인정보 목적 외 이용 및 제공",
+      "category": "개인정보 보유 및 이용 시 보호조치",
+      "auto_checkable": "partial",
+      "applicable_to": ["backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "mask\\(|maskPii|maskEmail|maskPhone|redact|anonymi[sz]e|\\*{3,}|\\\\u002a{3,}", "paths": ["**/admin/**", "**/cs/**", "**/dashboard/**", "**/operator/**", "**/console/**", "src/**", "app/**"], "description": "관리자/운영자 화면에 마스킹/가명처리 함수 사용 (목적 외 노출 방지)", "family": "admin_masking_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "purpose|data[-_ ]?usage[-_ ]?log|access[-_ ]?reason", "description": "조회/이용 목적 기록 로직", "family": "purpose_logging_present", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "당초 수집 목적 외 이용·제공 시 별도 동의 / 법령 근거 확인 절차 + 목적 외 이용 대장", "family": "purpose_compliance_doc", "required": true }
+      ],
+      "required_capabilities": [],
+      "evidence_hint": "목적 외 이용·제공 대장 + 별도 동의 화면 + 관리자 조회 로그",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.34"
+                      ],
+                      "status": "verified",
+                      "note": "PII 처리 목적 제한"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.OC-03"
+                      ],
+                      "status": "partial",
+                      "note": "법적 요구사항"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P4.1",
+                              "P4.2"
+                      ],
+                      "status": "verified",
+                      "note": "사용·보유·폐기 — 목적 부합"
+              }
+      }
+    },
+    {
+      "id": "3.2.5",
+      "name": "가명정보 처리",
+      "category": "개인정보 보유 및 이용 시 보호조치",
+      "auto_checkable": "partial",
+      "applicable_to": ["backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "pseudonymize|tokenize|anonymize|hash_pii|@Encrypted|typeorm[-_ ]?encrypted|pgcrypto", "description": "가명화/토큰화/컬럼 암호화 함수 (stack-agnostic — Supabase/Prisma 전용 정밀 검사는 stacks/ 의 별도 profile)", "family": "pseudonymization_present", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "가명화 적정성 평가는 별도 (개인정보 암호화 자체는 2.7.1/2.7.2 영역)", "family": "pseudonymization_review", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "encryption_at_rest", "required_aspects": ["column_encryption_present", "column_plaintext_absent"] }
+      ],
+      "evidence_hint": "가명정보 처리 결과 보고서 + DB 컬럼 암호화 매핑표",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.11",
+                              "A.5.34"
+                      ],
+                      "status": "verified",
+                      "note": "데이터 마스킹 + PII 보호"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.DS-01"
+                      ],
+                      "status": "candidate",
+                      "note": "Data protection (de-identification)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P4.1",
+                              "C1.1"
+                      ],
+                      "status": "candidate",
+                      "note": "사용 제한 + 기밀성"
+              }
+      }
+    },
+    {
+      "id": "3.3.1",
+      "name": "개인정보 제3자 제공",
+      "category": "개인정보 제공 시 보호조치",
+      "auto_checkable": "partial",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "(third[-_ ]?party|external[-_ ]?api|partner[-_ ]?api|provideTo|share[-_ ]?with)", "description": "제3자 제공 API/모듈 흔적", "family": "third_party_provide_code", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "처리방침에 제3자 제공 항목·받는 자·이용 목적·보유기간 명시 + 별도 동의 절차. LLM 본문 분석으로 자동화 예정 (v0.5)", "family": "third_party_disclosure", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "third_party_disclosure", "required_aspects": ["external_saas_inventory", "overseas_transfer_disclosure"] }
+      ],
+      "evidence_hint": "처리방침 제3자 제공 섹션 + 동의 화면 + 제공 내역 대장",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.34",
+                              "A.5.14"
+                      ],
+                      "status": "verified",
+                      "note": "PII 처리 + 정보 전송 합의"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.SC-05",
+                              "GV.SC-07"
+                      ],
+                      "status": "candidate",
+                      "note": "Supply chain — 제3자 데이터 흐름"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P6.1",
+                              "P6.2",
+                              "P6.3"
+                      ],
+                      "status": "verified",
+                      "note": "공개 — 제3자 제공 동의·기록"
+              }
+      }
+    },
+    {
+      "id": "3.3.2",
+      "name": "개인정보 처리 업무 위탁",
+      "category": "개인정보 제공 시 보호조치",
+      "auto_checkable": "partial",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "(?i)(stripe|toss|nicepay|kakaopay|sendgrid|mailgun|twilio|aligo|amazon\\s*ses|firebase|supabase|aws|gcp|azure)", "paths": ["**/package.json", "**/requirements*.txt", "**/Pipfile", "**/Gemfile", "**/go.mod", "**/*.ts", "**/*.js", "**/*.py"], "description": "외부 위탁사(결제·메일·SMS·클라우드) 사용 흔적 — 처리방침 위탁 매트릭스 명시 필요", "family": "outsourcing_dependency", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "처리방침에 위탁 업무·수탁자 명시 + 위수탁 계약서 (개인정보 보호조치 의무 포함) + 정기 점검 결과", "family": "outsourcing_disclosure", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "third_party_disclosure", "required_aspects": ["external_saas_inventory", "overseas_transfer_disclosure"] }
+      ],
+      "evidence_hint": "처리방침 위탁 섹션 + 위수탁 계약서 + 수탁자 점검 보고서 (연 1회 이상)",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.19",
+                              "A.5.20",
+                              "A.5.21",
+                              "A.5.34"
+                      ],
+                      "status": "verified",
+                      "note": "공급자 관계·계약·ICT 공급망·PII"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.SC-05",
+                              "GV.SC-07",
+                              "GV.SC-10"
+                      ],
+                      "status": "verified",
+                      "note": "Supplier 계약·관리·종료"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "CC9.2",
+                              "P6.4",
+                              "P6.5"
+                      ],
+                      "status": "verified",
+                      "note": "벤더 관리 + 위탁자 통제"
+              }
+      }
+    },
+    {
+      "id": "3.3.3",
+      "name": "영업의 양도 등에 따른 개인정보 이전",
+      "category": "개인정보 제공 시 보호조치",
+      "auto_checkable": "no",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "manual_review", "access_tier": 0, "description": "영업양수도·합병 등 사업 이전 시 정보주체 통지 절차 / 이전 사실 공고 (해당 사항 발생 시). 무발생 시 '無' 보고", "family": "business_transfer_doc", "required": true }
+      ],
+      "required_capabilities": [],
+      "evidence_hint": "양수도 시 발송한 통지 메일 / 공고문 (해당 시) — 미해당 시 미발생 보고",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.34"
+                      ],
+                      "status": "candidate",
+                      "note": "PII 처리 (영업양도 특수)"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.OC-03"
+                      ],
+                      "status": "partial",
+                      "note": "법적 요구사항"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P6.1",
+                              "P6.7"
+                      ],
+                      "status": "candidate",
+                      "note": "공개·통지 (M&A 시 정보주체 통지)"
+              }
+      }
+    },
+    {
+      "id": "3.3.4",
+      "name": "개인정보의 국외이전",
+      "category": "개인정보 제공 시 보호조치",
+      "auto_checkable": "partial",
+      "applicable_to": ["all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "(?i)(datadog|fullstory|new\\s*relic|amplitude|segment|posthog).*\\b(io|com)\\b|@datadog/", "paths": ["**/*.{ts,tsx,js,jsx,py}", "**/package.json"], "description": "해외 본사 SaaS 위탁 흔적 (stack-agnostic — Sentry 전용은 stacks/official/sentry.json). Sprint 2 에서 본격 확장 예정", "family": "overseas_saas_dependency", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "처리방침에 국외이전 항목·국가·이전 방법·정보주체 권리 명시 — LLM 본문 분석 (v0.4 Sprint 4 의 llm_review type 으로 자동화 예정). Sprint 2 에서 본격 확장 예정", "family": "overseas_transfer_disclosure", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "third_party_disclosure", "required_aspects": ["overseas_transfer_disclosure"] }
+      ],
+      "evidence_hint": "처리방침 국외이전 섹션 + 위탁사 보안 인증서",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.14",
+                              "A.5.34"
+                      ],
+                      "status": "verified",
+                      "note": "국외 전송 합의 + PII 보호"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.OC-03",
+                              "GV.SC-07"
+                      ],
+                      "status": "candidate",
+                      "note": "법적 요구 + 공급망 (국외 처리자)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P6.1",
+                              "P6.4"
+                      ],
+                      "status": "verified",
+                      "note": "공개 — 국외 이전 통지·계약"
+              }
+      }
+    },
+    {
+      "id": "3.4.1",
+      "name": "개인정보 파기",
+      "category": "개인정보 파기 시 보호조치",
+      "auto_checkable": "yes",
+      "applicable_to": ["backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "soft[-_ ]?delete|deleted_at|destroy_after|retention[-_ ]?days|ttl", "description": "파기/보관기간 처리 로직", "family": "destroy_logic_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "(cron|schedule|lambda).*(purge|delete[-_ ]?expired|cleanup)", "description": "주기적 파기 잡 존재", "family": "destroy_job_present", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "data_retention", "required_aspects": ["retention_policy_present"] }
+      ],
+      "evidence_hint": "파기 로그/실행 내역",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.8.10",
+                              "A.7.14"
+                      ],
+                      "status": "verified",
+                      "note": "정보 삭제 + 안전한 폐기"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "PR.DS-01"
+                      ],
+                      "status": "candidate",
+                      "note": "Data lifecycle — 안전한 destruction"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P4.2",
+                              "P4.3"
+                      ],
+                      "status": "verified",
+                      "note": "보유·폐기 (Retention & disposal)"
+              }
+      }
+    },
+    {
+      "id": "3.4.2",
+      "name": "처리목적 달성 후 보유 시 조치",
+      "category": "개인정보 파기 시 보호조치",
+      "auto_checkable": "partial",
+      "applicable_to": ["backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "archive_at|archived_at|retention_after_purpose|long_term_storage|legal_hold|cold[-_ ]?storage|legacy[-_ ]?retention", "description": "처리목적 달성 후 분리 보관 컬럼/잡 흔적 (별도 DB·테이블 분리 권장)", "family": "post_purpose_archival_code", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "(상법|전자상거래법|국세기본법|통신비밀보호법).*보관|retention_law|legal[-_ ]?retention[-_ ]?period", "paths": ["**/*.md", "**/*.ts", "**/*.js", "**/*.py", "**/docs/**"], "description": "법정 보관기간 명시 (상법 5년 / 전자상거래법 3·5년 등)", "family": "legal_retention_doc", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "처리목적 달성 후 법령에 따라 보유하는 경우 — 분리 보관 / 별도 DB 격리 / 접근통제 강화 / 목적 외 이용 금지 증적", "family": "post_purpose_storage_doc", "required": true }
+      ],
+      "required_capabilities": [
+        { "id": "data_retention", "required_aspects": ["retention_policy_present", "archive_separation"] }
+      ],
+      "evidence_hint": "법정 보관기간 정책 + 분리 보관 DB/테이블 캡처 + 보관기간 만료 후 파기 이력",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.34",
+                              "A.5.33"
+                      ],
+                      "status": "verified",
+                      "note": "PII 처리 + 기록 보호"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.OC-03"
+                      ],
+                      "status": "partial",
+                      "note": "법적 요구 (보유 기간)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P4.2"
+                      ],
+                      "status": "verified",
+                      "note": "보유 — 별도 저장·접근통제"
+              }
+      }
+    },
+    {
+      "id": "3.5.1",
+      "name": "개인정보 처리방침 공개",
+      "category": "정보주체 권리보호",
+      "auto_checkable": "partial",
+      "applicable_to": ["frontend", "backend", "fullstack", "all"],
+      "signals": [
+        { "type": "glob_exists", "access_tier": 0, "pattern": "**/{privacy,privacy-policy,privacypolicy}.{md,html,mdx,tsx,jsx,vue}", "description": "개인정보 처리방침 페이지 파일 존재", "family": "privacy_policy_page_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "(/privacy|/privacy-policy|개인정보\\s*처리방침)", "description": "처리방침 라우트/링크", "family": "privacy_policy_route", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "처리방침 내용의 법적 적정성은 DPO/법무 검토 영역", "family": "privacy_policy_legal_review", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "subject_rights", "required_aspects": ["privacy_policy_page_present"] }
+      ],
+      "evidence_hint": "공개된 처리방침 URL + 최종 갱신일",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.34",
+                              "A.5.1"
+                      ],
+                      "status": "verified",
+                      "note": "PII 보호 정책 + 정책 공개"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.PO-01"
+                      ],
+                      "status": "verified",
+                      "note": "Organizational policy (privacy policy)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P1.1",
+                              "P2.1"
+                      ],
+                      "status": "verified",
+                      "note": "프라이버시 고지 + 선택 권리 고지"
+              }
+      }
+    },
+    {
+      "id": "3.5.2",
+      "name": "정보주체 권리보장",
+      "category": "정보주체 권리보호",
+      "auto_checkable": "partial",
+      "applicable_to": ["frontend", "backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "data[-_ ]?export|right[-_ ]?to[-_ ]?access|right[-_ ]?to[-_ ]?delete|gdpr|opt[-_ ]?out|withdraw[-_ ]?consent", "description": "정보주체 권리 행사 API/UI (열람·정정·삭제·처리정지·동의철회)", "family": "data_subject_rights_api", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "subject_rights", "required_aspects": ["rights_api_present"] }
+      ],
+      "evidence_hint": "권리 행사 처리 SOP + 처리 시한 통계",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.34"
+                      ],
+                      "status": "verified",
+                      "note": "PII 보호 (열람·정정·삭제 권리)"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "GV.OC-03"
+                      ],
+                      "status": "partial",
+                      "note": "법적 요구 (정보주체 권리)"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P5.1",
+                              "P5.2"
+                      ],
+                      "status": "verified",
+                      "note": "Access — 정보주체 열람·정정·삭제"
+              }
+      }
+    },
+    {
+      "id": "3.5.3",
+      "name": "정보주체에 대한 통지",
+      "category": "정보주체 권리보호",
+      "auto_checkable": "partial",
+      "applicable_to": ["backend", "fullstack", "all"],
+      "signals": [
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "(annual|periodic|yearly).*(notice|notification|email|sms)|이용내역\\s*통지|개인정보\\s*이용내역", "description": "정기 이용내역 통지 발송 잡/모듈", "family": "periodic_notice_present", "required": false },
+        { "type": "grep_pattern", "access_tier": 0, "pattern": "(cron|schedule|lambda|sidekiq|celery).*(privacy|notice|notification)", "description": "스케줄러 기반 통지 작업", "family": "notice_scheduler_present", "required": false },
+        { "type": "manual_review", "access_tier": 0, "description": "통지 주기·내용 적정성은 운영 정책 영역", "family": "notice_policy_review", "required": false }
+      ],
+      "required_capabilities": [
+        { "id": "subject_rights", "required_aspects": ["periodic_notice_present"] }
+      ],
+      "evidence_hint": "최근 발송 이력 + 통지 템플릿",
+      "cross_mappings": {
+              "iso_27001_2022": {
+                      "ids": [
+                              "A.5.34",
+                              "A.6.8"
+                      ],
+                      "status": "candidate",
+                      "note": "PII 보호 + 사고 보고 (유출 통지)"
+              },
+              "nist_csf_2_0": {
+                      "ids": [
+                              "RS.CO-02",
+                              "RS.CO-03"
+                      ],
+                      "status": "verified",
+                      "note": "Incident communication 이해관계자 통지"
+              },
+              "soc_2_tsc": {
+                      "ids": [
+                              "P6.6",
+                              "P1.1"
+                      ],
+                      "status": "verified",
+                      "note": "Breach 통지 + 처리 변경 통지"
+              }
+      }
+    }
+  ]
+}

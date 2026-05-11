@@ -1,0 +1,82 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "cloudflare-workers",
+    "name": "Cloudflare Workers",
+    "category": "hosting",
+    "vendor": "Cloudflare, Inc.",
+    "homepage": "https://workers.cloudflare.com",
+    "data_region_note": "Cloudflare 글로벌 엣지 네트워크 — 한국 사용자 요청이 해외 데이터센터 경유 가능. D1/KV/R2 region 설정 검토 권장. ISMS-P 3.3.4 국외이전 통제 적용 검토 대상.",
+    "isms_p_relevance": ["2.7.2", "2.6.1", "2.6.4", "3.3.4"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "wrangler.toml" },
+      { "type": "file_exists", "pattern": "wrangler.json" },
+      { "type": "file_exists", "pattern": "wrangler.jsonc" },
+      { "type": "file_exists", "pattern": "**/wrangler.toml" },
+      { "type": "file_exists", "pattern": "**/wrangler.json" },
+      { "type": "package_dependency", "name": "wrangler" },
+      { "type": "package_dependency", "name": "@cloudflare/workers-types" },
+      { "type": "package_dependency", "name": "miniflare" }
+    ],
+    "version_capture": {
+      "from": "package.json",
+      "key": "devDependencies.wrangler"
+    }
+  },
+  "signals": [
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "cf_workers_secret_inline",
+      "required": true,
+      "description": "wrangler.toml [vars] 섹션에 평문 시크릿 의심 — `wrangler secret put` 또는 환경변수 참조여야 함",
+      "pattern": "\\[vars\\][\\s\\S]*?(SECRET|API_KEY|TOKEN|PASSWORD|PRIVATE_KEY)[A-Z_]*\\s*=\\s*['\"][A-Za-z0-9_/+=\\-]{12,}['\"]",
+      "paths": ["**/wrangler.toml"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.6.1"],
+      "family": "cf_workers_route_open",
+      "required": false,
+      "description": "Workers route 가 '*' 또는 '*/*' 전체 도메인 매칭 — 의도된 게이트웨이가 아니면 검토 필요",
+      "pattern": "route\\s*=\\s*['\"]\\*['\"]|routes\\s*=\\s*\\[[^\\]]*['\"]\\*['\"]",
+      "paths": ["**/wrangler.toml", "**/wrangler.json", "**/wrangler.jsonc"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.6.4"],
+      "family": "cf_d1_no_authn_layer",
+      "required": false,
+      "description": "Cloudflare D1 사용 시 어플리케이션 layer 인증/권한 가드 부재 — D1 은 RLS 미지원이므로 코드에서 row-level 검증 필요",
+      "pattern": "(?i)(verify(Token|Session|Auth|Jwt)|authMiddleware|requireAuth|getUserFromRequest)",
+      "paths": ["**/*.{ts,tsx,js,jsx}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.4"],
+      "family": "external_saas_dependency",
+      "required": false,
+      "description": "Cloudflare Workers/D1/KV/R2 사용 — 한국 사용자 데이터 글로벌 라우팅, 위탁 매트릭스 및 국외이전 명시 필요",
+      "pattern": "(?i)cloudflare\\.com|workers\\.dev|\\.r2\\.cloudflarestorage\\.com|@cloudflare/|D1Database|KVNamespace",
+      "paths": ["**/*.{ts,tsx,js,jsx}", "**/wrangler.toml", "**/package.json"]
+    }
+  ],
+  "capabilities": {
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["cf_workers_secret_inline"]
+    },
+    "application_access_control": {
+      "function_url_authenticated": ["cf_workers_route_open"],
+      "app_layer_authn_present": ["cf_d1_no_authn_layer"]
+    },
+    "third_party_disclosure": {
+      "external_saas_inventory": ["external_saas_dependency"]
+    }
+  }
+}

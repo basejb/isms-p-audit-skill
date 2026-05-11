@@ -1,0 +1,100 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "firebase",
+    "name": "Firebase",
+    "category": "baas-db",
+    "vendor": "Google LLC",
+    "homepage": "https://firebase.google.com",
+    "data_region_note": "Firebase 기본 리전 = us-central. 한국 리전(asia-northeast3) 명시 필요. 미명시 또는 멀티리전(nam5/eur3) 사용 시 ISMS-P 3.3.4 국외이전 통제 적용 대상.",
+    "isms_p_relevance": ["2.6.4", "3.2.5", "2.5.3", "2.7.2", "3.3.4"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "firebase.json" },
+      { "type": "file_exists", "pattern": "**/firebase.json" },
+      { "type": "file_exists", "pattern": "firestore.rules" },
+      { "type": "file_exists", "pattern": "**/firestore.rules" },
+      { "type": "file_exists", "pattern": "storage.rules" },
+      { "type": "file_exists", "pattern": "**/storage.rules" },
+      { "type": "package_dependency", "name": "firebase" },
+      { "type": "package_dependency", "name": "firebase-admin" },
+      { "type": "package_dependency", "name": "@firebase/app" },
+      { "type": "package_dependency", "name": "@firebase/firestore" },
+      { "type": "package_dependency", "name": "@firebase/auth" }
+    ],
+    "version_capture": {
+      "from": "package.json",
+      "key": "dependencies.firebase"
+    }
+  },
+  "signals": [
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.6.4"],
+      "family": "firestore_rules_open",
+      "required": true,
+      "description": "Firestore/Storage 보안 규칙 allow read/write: if true 부재 — 인증 없이 전체 데이터 노출 위험",
+      "pattern": "allow\\s+read,?\\s*write:\\s*if\\s+true|allow\\s+read:\\s*if\\s+true|allow\\s+write:\\s*if\\s+true",
+      "paths": ["**/firestore.rules", "**/storage.rules"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "firebase_admin_sdk_inline_credentials",
+      "required": true,
+      "description": "Firebase Admin SDK service account JSON private_key 평문 코드 내 하드코딩 의심",
+      "pattern": "(?i)['\"]private_key['\"]\\s*:\\s*['\"]-----BEGIN\\s+(RSA\\s+)?PRIVATE\\s+KEY-----",
+      "paths": ["**/*.{ts,tsx,js,jsx,json}", "!**/*.example.*", "!**/*.sample.*"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.5.3"],
+      "family": "firebase_anonymous_auth_enabled",
+      "required": false,
+      "description": "Firebase Auth signInAnonymously 사용 — 사용자 식별 불가, 정보 자기결정권/접근통제 정책상 검토 필요",
+      "pattern": "signInAnonymously\\(",
+      "paths": ["**/*.{ts,tsx,js,jsx}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.2.5"],
+      "family": "firestore_pii_collection",
+      "required": false,
+      "description": "Firestore 내 PII 컬렉션 (users/members/customers/orders/payments) 사용 식별 — 보안규칙·암호화 검토 필요",
+      "pattern": "collection\\(['\"](?i)(users|members|customers|orders|payments|profiles|accounts)['\"]\\)",
+      "paths": ["**/*.{ts,tsx,js,jsx}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.4"],
+      "family": "firebase_region_default",
+      "required": false,
+      "description": "Firebase 프로젝트 리전 명시 부재 — 기본값(us-central) 또는 멀티리전(nam5/eur3) 사용 시 국외이전 검토 대상",
+      "pattern": "(?i)region\\s*[:=]\\s*['\"](us-central|nam5|eur3|us-east1|us-west1)",
+      "paths": ["**/firebase.json", "**/*.{ts,tsx,js,jsx}"]
+    }
+  ],
+  "capabilities": {
+    "network_isolation": {
+      "no_public_db": ["firestore_rules_open"]
+    },
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["firebase_admin_sdk_inline_credentials"]
+    },
+    "authentication": {
+      "anonymous_auth_review": ["firebase_anonymous_auth_enabled"]
+    },
+    "data_minimization": {
+      "pii_inventory": ["firestore_pii_collection"]
+    },
+    "third_party_disclosure": {
+      "overseas_transfer_disclosure": ["firebase_region_default"]
+    }
+  }
+}

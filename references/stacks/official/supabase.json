@@ -1,0 +1,110 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "supabase",
+    "name": "Supabase",
+    "category": "baas-db",
+    "vendor": "Supabase Inc.",
+    "homepage": "https://supabase.com",
+    "data_region_note": "Supabase 프로젝트 리전 확인 필요 (ap-northeast-2 권장). 다른 리전 사용 시 ISMS-P 3.3.4 국외이전 통제 적용 대상.",
+    "isms_p_relevance": ["2.6.4", "3.2.5", "2.5.5", "2.7.2", "3.3.4"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "supabase/config.toml" },
+      { "type": "file_exists", "pattern": "supabase/migrations/**/*.sql" },
+      { "type": "package_dependency", "name": "@supabase/supabase-js" },
+      { "type": "package_dependency", "name": "@supabase/ssr" },
+      { "type": "package_dependency", "name": "@supabase/auth-helpers-nextjs" }
+    ],
+    "version_capture": {
+      "from": "package.json",
+      "key": "dependencies.@supabase/supabase-js"
+    }
+  },
+  "signals": [
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.6.4", "3.2.5"],
+      "family": "pii_table_present",
+      "required": false,
+      "description": "PII 보유 테이블 식별 (users/orders/payments 등) — 다음 시그널의 컨텍스트",
+      "pattern": "CREATE TABLE\\s+(?:public\\.)?(?:users|members|customers|accounts|profiles|orders|order_items|order_events|shipping_addresses|payments|cards|sessions|user_logs)\\b",
+      "paths": ["**/*.sql", "supabase/migrations/**", "db/migrations/**", "prisma/migrations/**"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.6.4", "3.2.5"],
+      "family": "rls_public_pii_table",
+      "required": true,
+      "description": "PII 보유 테이블에 RLS USING(true)/WITH CHECK(true) 부재 — 의도적 public 테이블(products 등)과 분리",
+      "pattern": "(?s)CREATE\\s+POLICY[^;]+ON\\s+(?:public\\.)?(?:users|members|customers|orders|order_items|order_events|shipping_addresses|payments|cards|sessions|user_logs)[^;]+(USING\\s*\\(\\s*true\\s*\\)|WITH\\s+CHECK\\s*\\(\\s*true\\s*\\))",
+      "paths": ["**/*.sql", "supabase/migrations/**", "supabase/policies/**", "db/migrations/**", "db/policies/**"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.2.5"],
+      "family": "pii_column_plaintext",
+      "required": false,
+      "description": "PII 컬럼(email/phone/address/name/birth/ssn/카드/계좌 등) 평문 저장 식별",
+      "pattern": "(?i)\\b(email|phone|mobile|tel|telephone|address|name|first_name|last_name|fullname|birth(?:_date)?|birthday|ssn|resident_number|jumin|passport|card_number|account_number|shipping_info|billing_info)\\b\\s+(text|varchar|char|jsonb|json)",
+      "paths": ["**/*.sql", "supabase/migrations/**", "db/migrations/**", "prisma/schema.prisma"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.2", "3.2.5"],
+      "family": "pii_column_encrypted",
+      "required": false,
+      "description": "PostgreSQL pgcrypto / Supabase Vault 등 컬럼 암호화 사용",
+      "pattern": "(?i)pgcrypto|encrypt\\(|crypt\\(|pgp_sym_encrypt|supabase[-_ ]?vault|vault\\.secrets",
+      "paths": ["**/*.sql", "supabase/migrations/**", "db/migrations/**", "**/*.{ts,js,py}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.5.5", "2.7.2"],
+      "family": "supabase_service_role_usage",
+      "required": false,
+      "description": "Supabase service_role 키 사용 위치 — RLS 우회 권한이므로 서버 전용 코드에서만 사용해야 함 (브라우저 노출 시 critical)",
+      "pattern": "(?i)(SERVICE_ROLE_KEY|service_role|supabaseServiceRoleKey|process\\.env\\.SUPABASE_SERVICE_ROLE)",
+      "paths": ["**/*.{ts,tsx,js,jsx}", "**/*.env*"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.6.4"],
+      "family": "supabase_rls_disabled_pii",
+      "required": true,
+      "description": "PII 테이블에 ALTER TABLE ... DISABLE ROW LEVEL SECURITY 부재",
+      "pattern": "(?i)ALTER\\s+TABLE\\s+(?:public\\.)?(?:users|members|customers|orders|order_items|payments|cards|sessions|user_logs)\\s+DISABLE\\s+ROW\\s+LEVEL\\s+SECURITY",
+      "paths": ["**/*.sql", "supabase/migrations/**", "db/migrations/**"]
+    }
+  ],
+  "capabilities": {
+    "encryption_at_rest": {
+      "column_plaintext_absent": ["pii_column_plaintext"],
+      "column_encryption_present": ["pii_column_encrypted"]
+    },
+    "network_isolation": {
+      "no_public_db": ["rls_public_pii_table", "supabase_rls_disabled_pii"]
+    },
+    "access_control": {
+      "admin_policy_not_attached": ["supabase_service_role_usage"]
+    },
+    "data_minimization": {
+      "pii_inventory": ["pii_table_present"]
+    }
+  },
+  "auxiliary_tools": [
+    {
+      "name": "supabase-management-api",
+      "tier": 2,
+      "command": "curl -H 'Authorization: Bearer $SUPABASE_PAT' https://api.supabase.com/v1/projects/<ref>",
+      "covers": ["pii_column_encrypted", "supabase_service_role_usage", "rls_public_pii_table"]
+    }
+  ]
+}

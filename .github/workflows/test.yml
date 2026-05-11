@@ -1,0 +1,77 @@
+name: skill-integrity
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r tests/requirements.txt
+
+      - name: Run pytest (51 tests, 9 sections)
+        run: python3 -m pytest tests/ -v --tb=short
+
+      - name: Verify bash scripts syntax
+        run: |
+          bash -n scripts/scan.sh
+          bash -n scripts/init-gitignore.sh
+
+  json-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install jsonschema
+        run: pip install jsonschema
+
+      - name: Validate all references/*.json files
+        run: |
+          python3 -c "
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          refs = Path('references')
+
+          # Schema validity
+          for schema_file in refs.glob('*.schema.json'):
+              schema = json.loads(schema_file.read_text())
+              Draft202012Validator.check_schema(schema)
+              print(f'  schema valid: {schema_file.name}')
+
+          # Data ↔ schema
+          pairs = [
+              ('controls.json', 'controls.schema.json'),
+              ('capabilities.json', 'capability.schema.json'),
+          ]
+          for data_name, schema_name in pairs:
+              schema = json.loads((refs / schema_name).read_text())
+              data = json.loads((refs / data_name).read_text())
+              errs = list(Draft202012Validator(schema).iter_errors(data))
+              assert not errs, f'{data_name} validation failed: {len(errs)} errors'
+              print(f'  data valid: {data_name}')
+
+          # Stack profiles
+          stack_schema = json.loads((refs / 'stack-profile.schema.json').read_text())
+          for stack_file in (refs / 'stacks' / 'official').glob('*.json'):
+              data = json.loads(stack_file.read_text())
+              errs = list(Draft202012Validator(stack_schema).iter_errors(data))
+              assert not errs, f'{stack_file.name} failed: {len(errs)} errors'
+          print(f'  data valid: stacks/official/*.json (20 files)')
+          "

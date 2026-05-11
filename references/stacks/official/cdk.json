@@ -1,0 +1,92 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "cdk",
+    "name": "AWS CDK",
+    "category": "iac",
+    "vendor": "Amazon Web Services",
+    "homepage": "https://aws.amazon.com/cdk/",
+    "isms_p_relevance": ["2.5.5", "2.6.1", "2.7.2"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "cdk.json" },
+      { "type": "file_exists", "pattern": "cdk.context.json" },
+      { "type": "file_exists", "pattern": "**/cdk.json" },
+      { "type": "package_dependency", "name": "aws-cdk-lib" },
+      { "type": "package_dependency", "name": "aws-cdk" },
+      { "type": "file_exists", "pattern": "lib/*-stack.ts" },
+      { "type": "file_exists", "pattern": "lib/*-stack.js" },
+      { "type": "file_exists", "pattern": "lib/*-stack.py" }
+    ],
+    "version_capture": {
+      "from": "package.json",
+      "key": "dependencies.aws-cdk-lib"
+    }
+  },
+  "signals": [
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.5.5"],
+      "family": "cdk_iam_admin_attached",
+      "required": true,
+      "description": "AWS CDK 코드에서 ManagedPolicy AdministratorAccess 직접 부착 부재 — 최소권한 위반",
+      "pattern": "iam\\.ManagedPolicy\\.fromAwsManagedPolicyName\\(['\"]AdministratorAccess['\"]\\)",
+      "paths": ["lib/**/*.ts", "lib/**/*.js", "lib/**/*.py", "**/cdk/**/*.{ts,js,py}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.5.5"],
+      "family": "cdk_inline_iam_grant",
+      "required": false,
+      "description": "CDK grant* / grantFullAccess 또는 wildcard action 인라인 IAM 부여 — 최소권한 검토 필요",
+      "pattern": "\\.grantFullAccess\\(|\\.grant\\([^)]*['\"]\\*['\"]",
+      "paths": ["lib/**/*.ts", "lib/**/*.js", "lib/**/*.py", "**/cdk/**/*.{ts,js,py}"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.6.1"],
+      "family": "cdk_open_security_group",
+      "required": true,
+      "description": "CDK SecurityGroup 에 0.0.0.0/0 또는 Peer.anyIpv4() 전체 개방 부재",
+      "pattern": "Peer\\.anyIpv4\\(\\)|0\\.0\\.0\\.0/0",
+      "paths": ["lib/**/*.ts", "lib/**/*.js", "lib/**/*.py"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.6.1"],
+      "family": "cdk_s3_public",
+      "required": true,
+      "description": "CDK S3 Bucket publicReadAccess 또는 BucketAccessControl.PUBLIC_READ 부재",
+      "pattern": "publicReadAccess:\\s*true|BucketAccessControl\\.PUBLIC_READ",
+      "paths": ["lib/**/*.ts", "lib/**/*.js", "lib/**/*.py"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "cdk_secret_inline",
+      "required": false,
+      "description": "CDK 코드 내 환경변수에 평문 시크릿 의심 (environment: { SECRET/API_KEY/TOKEN/PASSWORD: '<long>' })",
+      "pattern": "environment\\s*:\\s*\\{[^}]*(SECRET|API_KEY|TOKEN|PASSWORD)[^}]*['\"][A-Za-z0-9_/+=\\-]{12,}['\"]",
+      "paths": ["lib/**/*.ts", "lib/**/*.js", "lib/**/*.py"]
+    }
+  ],
+  "capabilities": {
+    "access_control": {
+      "admin_policy_not_attached": ["cdk_iam_admin_attached"],
+      "inline_iam_review": ["cdk_inline_iam_grant"]
+    },
+    "network_isolation": {
+      "no_open_cidr": ["cdk_open_security_group"],
+      "no_public_s3": ["cdk_s3_public"]
+    },
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["cdk_secret_inline"]
+    }
+  }
+}

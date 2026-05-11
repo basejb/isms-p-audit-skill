@@ -1,0 +1,81 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "pulumi",
+    "name": "Pulumi",
+    "category": "iac",
+    "vendor": "Pulumi Corporation",
+    "homepage": "https://www.pulumi.com",
+    "isms_p_relevance": ["2.5.5", "2.6.1", "2.7.2"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "Pulumi.yaml" },
+      { "type": "file_exists", "pattern": "Pulumi.*.yaml" },
+      { "type": "file_exists", "pattern": "**/Pulumi.yaml" },
+      { "type": "package_dependency", "name": "@pulumi/pulumi" },
+      { "type": "package_dependency", "name": "@pulumi/aws" },
+      { "type": "package_dependency", "name": "@pulumi/awsx" },
+      { "type": "package_dependency", "name": "@pulumi/gcp" },
+      { "type": "package_dependency", "name": "@pulumi/azure-native" }
+    ],
+    "version_capture": {
+      "from": "package.json",
+      "key": "dependencies.@pulumi/pulumi"
+    }
+  },
+  "signals": [
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "pulumi_secret_inline",
+      "required": false,
+      "description": "Pulumi config secret 이 아닌 plaintext 사용 또는 require() 평문 시크릿 의심 — `pulumi config set --plaintext` 또는 require(...) 직접 노출",
+      "pattern": "config\\s+set\\s+--plaintext|new\\s+pulumi\\.Config\\([^)]*\\)\\.require\\([^)]*(secret|password|token|api_?key)",
+      "paths": ["**/*.{ts,js,py,go}", "Pulumi.*.yaml"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.6.1"],
+      "family": "pulumi_open_security_group",
+      "required": true,
+      "description": "Pulumi 보안그룹/방화벽 룰에서 0.0.0.0/0 전체 개방 부재",
+      "pattern": "cidrBlocks:\\s*\\[?\\s*['\"]0\\.0\\.0\\.0/0['\"]",
+      "paths": ["**/*.{ts,js,py,go}"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.5.5"],
+      "family": "pulumi_iam_wildcard",
+      "required": true,
+      "description": "Pulumi IAM 정책에서 Action: '*' / actions: ['*'] 와일드카드 부재 — 최소권한 위반",
+      "pattern": "Action:\\s*['\"]\\*['\"]|actions:\\s*\\[?\\s*['\"]\\*['\"]",
+      "paths": ["**/*.{ts,js,py,go}", "**/policies/**"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.6.1"],
+      "family": "pulumi_s3_public",
+      "required": false,
+      "description": "Pulumi S3 / GCS bucket public ACL 사용 — 의도된 정적 자산이면 화이트리스트, 그 외 fail",
+      "pattern": "acl:\\s*['\"]public-read['\"]|publicAccessPrevention:\\s*['\"]inherited['\"]|allowAnonymousAccess:\\s*true",
+      "paths": ["**/*.{ts,js,py,go}"]
+    }
+  ],
+  "capabilities": {
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["pulumi_secret_inline"]
+    },
+    "network_isolation": {
+      "no_open_cidr": ["pulumi_open_security_group"],
+      "no_public_s3": ["pulumi_s3_public"]
+    },
+    "access_control": {
+      "wildcard_action_absent": ["pulumi_iam_wildcard"]
+    }
+  }
+}

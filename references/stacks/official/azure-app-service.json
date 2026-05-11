@@ -1,0 +1,119 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "azure-app-service",
+    "name": "Azure App Service",
+    "category": "hosting",
+    "vendor": "Microsoft Corporation",
+    "homepage": "https://learn.microsoft.com/en-us/azure/app-service/",
+    "data_region_note": "Azure App Service 리전 명시 권장. koreacentral / koreasouth 사용 권장. East US / West Europe 등 한국 외 리전 사용 시 ISMS-P 3.3.4 국외이전 통제 적용 대상.",
+    "isms_p_relevance": ["2.5.3", "2.6.1", "2.6.2", "2.6.3", "2.7.1", "2.7.2", "2.9.4", "2.10.1", "3.3.4"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "web.config" },
+      { "type": "file_exists", "pattern": "**/web.config" },
+      { "type": "file_exists", "pattern": "applicationinsights.json" },
+      { "type": "file_exists", "pattern": "**/applicationinsights.json" },
+      { "type": "file_exists", "pattern": ".azure/config" },
+      { "type": "file_exists", "pattern": "azure-pipelines.yml" },
+      { "type": "file_exists", "pattern": ".github/workflows/*azure*.yml" },
+      { "type": "package_dependency", "name": "@azure/identity" },
+      { "type": "package_dependency", "name": "@azure/keyvault-secrets" },
+      { "type": "package_dependency", "name": "applicationinsights" }
+    ]
+  },
+  "signals": [
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.1"],
+      "family": "azure_app_https_only_disabled",
+      "required": true,
+      "description": "Azure App Service httpsOnly = false 설정 — HTTP 평문 트래픽 허용 위험",
+      "pattern": "httpsOnly\\s*[:=]\\s*false|https_only\\s*[:=]\\s*false",
+      "paths": ["**/*.{tf,tfvars,bicep}", "**/azure-pipelines.{yml,yaml}", "**/*.json"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.1"],
+      "family": "azure_app_tls_min_below_1_2",
+      "required": true,
+      "description": "Azure App Service minTlsVersion 가 1.0 또는 1.1 로 설정 — TLS 1.2 이상 권장",
+      "pattern": "minTlsVersion\\s*[:=]\\s*['\"]?(1\\.0|1\\.1)|min_tls_version\\s*[:=]\\s*['\"]?(1\\.0|1\\.1)",
+      "paths": ["**/*.{tf,tfvars,bicep}", "**/*.json"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.6.3"],
+      "family": "azure_app_anonymous_access",
+      "required": false,
+      "description": "Azure App Service Authentication 이 anonymous 허용 (siteAuthSettings.unauthenticatedClientAction = AllowAnonymous) — 인증 필수 검토",
+      "pattern": "AllowAnonymous|unauthenticated_client_action\\s*[:=]\\s*['\"]?AllowAnonymous",
+      "paths": ["**/*.{tf,tfvars,bicep}", "**/*.json"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "azure_app_managed_identity_absent",
+      "required": false,
+      "description": "Azure App Service Managed Identity (system-assigned 또는 user-assigned) 사용 부재 — connection string 직접 사용 시 시크릿 관리 위험",
+      "pattern": "identity\\s*\\{[^}]*type|managedIdentity|managed_service_identity|identityType",
+      "paths": ["**/*.{tf,tfvars,bicep}", "**/*.json"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.9.4"],
+      "family": "azure_app_diagnostic_logs_disabled",
+      "required": false,
+      "description": "Azure App Service diagnostic settings (HTTP log / Application log / Detailed errors) 설정 부재 — 감사 로그 누락",
+      "pattern": "logs\\s*\\{|httpLogs|applicationLogs|diagnostic[_-]?settings|azurerm_monitor_diagnostic_setting",
+      "paths": ["**/*.{tf,tfvars,bicep}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.4"],
+      "family": "azure_app_region_default",
+      "required": false,
+      "description": "Azure App Service location 명시 부재 또는 East US / West Europe 등 한국 외 리전 — 국외이전 검토 대상",
+      "pattern": "(?i)location\\s*[:=]\\s*['\"]?(eastus|eastus2|westus|westus2|westus3|centralus|northeurope|westeurope|uksouth|ukwest|francecentral|germanywestcentral|switzerlandnorth|swedencentral)",
+      "paths": ["**/*.{tf,tfvars,bicep}", "**/*.{yml,yaml}"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.10.1"],
+      "family": "azure_app_ip_restrictions_present",
+      "required": false,
+      "description": "Azure App Service ipRestrictions / accessRestrictions 설정 부재 — IP 화이트리스트 또는 Private Endpoint 권장",
+      "pattern": "ip[_-]?restrictions|access[_-]?restrictions|ipSecurityRestrictions",
+      "paths": ["**/*.{tf,tfvars,bicep}"]
+    }
+  ],
+  "capabilities": {
+    "encryption_in_transit": {
+      "alb_tls_modern": ["azure_app_https_only_disabled", "azure_app_tls_min_below_1_2"]
+    },
+    "application_access_control": {
+      "middleware_present": ["azure_app_anonymous_access"],
+      "app_layer_authn_present": ["azure_app_anonymous_access"]
+    },
+    "secrets_management": {
+      "kms_or_vault_used": ["azure_app_managed_identity_absent"]
+    },
+    "audit_logging": {
+      "lb_access_log_enabled": ["azure_app_diagnostic_logs_disabled"]
+    },
+    "network_isolation": {
+      "no_open_cidr": ["azure_app_ip_restrictions_present"]
+    },
+    "third_party_disclosure": {
+      "overseas_transfer_disclosure": ["azure_app_region_default"]
+    }
+  }
+}

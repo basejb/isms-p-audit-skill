@@ -1,0 +1,87 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "prisma",
+    "name": "Prisma ORM",
+    "category": "baas-db",
+    "vendor": "Prisma Data, Inc.",
+    "homepage": "https://prisma.io",
+    "isms_p_relevance": ["2.7.2", "3.2.5", "3.2.4"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "prisma/schema.prisma" },
+      { "type": "file_exists", "pattern": "**/prisma/schema.prisma" },
+      { "type": "package_dependency", "name": "@prisma/client" },
+      { "type": "package_dependency", "name": "prisma" }
+    ],
+    "version_capture": {
+      "from": "package.json",
+      "key": "dependencies.@prisma/client"
+    }
+  },
+  "signals": [
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "prisma_secret_in_schema",
+      "required": true,
+      "description": "schema.prisma 내 url = \"...\" 평문 시크릿 부재 — env(\"DATABASE_URL\") 또는 환경변수 참조여야 함",
+      "pattern": "url\\s*=\\s*['\"](?!env\\()[^'\"\\n]+['\"]",
+      "paths": ["**/prisma/schema.prisma", "**/schema.prisma"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.2.5"],
+      "family": "prisma_pii_field",
+      "required": false,
+      "description": "Prisma model 안 PII 필드 식별 (email/phone/name/address/birth/ssn 등) — 컬럼 암호화 또는 RLS 검토 필요",
+      "pattern": "(?i)^\\s*(email|phone|mobile|tel|telephone|address|name|first_?name|last_?name|fullname|birth(?:_?date)?|birthday|ssn|resident_?number|jumin|passport|card_?number|account_?number)\\s+(String|Json|Bytes)",
+      "paths": ["**/prisma/schema.prisma", "**/schema.prisma"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["3.2.4"],
+      "family": "prisma_logging_query",
+      "required": false,
+      "description": "PrismaClient log: ['query'] 운영 환경 의심 — query log 에 PII 노출 가능. development 가드 없으면 fail",
+      "pattern": "log\\s*:\\s*\\[[^\\]]*['\"]query['\"]",
+      "paths": ["**/*.{ts,tsx,js,jsx}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "prisma_db_url_env",
+      "required": false,
+      "description": "DATABASE_URL 환경변수 참조 패턴 (env(\"DATABASE_URL\")) — 정상 운영 형태 확인",
+      "pattern": "env\\(['\"]DATABASE_URL['\"]\\)",
+      "paths": ["**/prisma/schema.prisma", "**/schema.prisma"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.2.5"],
+      "family": "prisma_soft_delete",
+      "required": false,
+      "description": "Prisma 모델에 deletedAt / DateTime? 형태 soft-delete 필드 — 파기 시 hard-delete 필요한 PII 와의 정합성 검토",
+      "pattern": "(?i)deleted_?at\\s+DateTime\\?",
+      "paths": ["**/prisma/schema.prisma", "**/schema.prisma"]
+    }
+  ],
+  "capabilities": {
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["prisma_secret_in_schema", "prisma_db_url_env"]
+    },
+    "data_retention": {
+      "retention_policy_present": ["prisma_soft_delete"]
+    },
+    "data_minimization": {
+      "pii_inventory": ["prisma_pii_field"],
+      "pii_in_logs_absent": ["prisma_logging_query"]
+    }
+  }
+}

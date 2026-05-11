@@ -1,0 +1,377 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/basejb/isms-p-audit-skill/references/controls.schema.json",
+  "title": "ISMS-P Controls Schema",
+  "description": "isms-p-audit Skill 의 controls.json 형식 정의. v0.3 부터 access_tier 필드를 통해 정적/외부도구/클라우드RO/런타임 4단계 검증을 지원.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "isms_p_version",
+    "source_url",
+    "source_document",
+    "last_verified",
+    "description",
+    "controls"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "controls.json 스키마 버전 (e.g. '0.3')."
+    },
+    "isms_p_version": {
+      "type": "string",
+      "description": "참조한 KISA ISMS-P 안내서 버전 (e.g. '2023.11')."
+    },
+    "source_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "공식 안내서 출처 URL."
+    },
+    "source_document": {
+      "type": "string",
+      "description": "출처 문서명."
+    },
+    "last_verified": {
+      "type": "string",
+      "format": "date",
+      "description": "최종 검증 일자 (YYYY-MM-DD)."
+    },
+    "description": {
+      "type": "string",
+      "description": "테이블 전체 설명."
+    },
+    "controls": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/control" },
+      "description": "통제 항목 배열."
+    }
+  },
+  "$defs": {
+    "control": {
+      "type": "object",
+      "required": ["id", "name", "category", "auto_checkable", "signals", "evidence_hint"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$",
+          "description": "ISMS-P 통제 ID (e.g. '2.5.5')."
+        },
+        "name": {
+          "type": "string",
+          "description": "통제 이름."
+        },
+        "category": {
+          "type": "string",
+          "description": "통제 카테고리 (e.g. '인증 및 권한관리')."
+        },
+        "auto_checkable": {
+          "type": "string",
+          "enum": ["yes", "no", "partial"],
+          "description": "자동 검증 가능 여부."
+        },
+        "applicable_to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["frontend", "backend", "fullstack", "infra", "mobile", "all"]
+          },
+          "default": ["all"],
+          "description": "v0.5.0-B 부터 추가. 이 통제가 평가 가능한 레포 역할. 'all' 은 모든 역할에서 평가 가능. 옵션 필드 — 미명시 시 [\"all\"] 로 처리."
+        },
+        "signals": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/signal" },
+          "description": "통제 검증을 위한 시그널 배열."
+        },
+        "required_capabilities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "required_aspects"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$",
+                "description": "capabilities.json 의 capability ID."
+              },
+              "required_aspects": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "description": "해당 capability 의 verification_aspects[i].id 배열."
+              }
+            }
+          },
+          "description": "v0.4.5 부터 추가. 통제 검증에 요구되는 capability+aspect 매핑. manual_review only 통제는 빈 배열."
+        },
+        "evidence_hint": {
+          "type": "string",
+          "description": "추가 증적/외부 자료에 대한 안내."
+        },
+        "cross_mappings": {
+          "type": "object",
+          "description": "v0.7-pre 신설 — ISMS-P 통제의 글로벌 framework cross-mapping. 보고서 §1 통제별 결과 표의 '(≈ ISO A.5.16, NIST CSF PR.AA-01, SOC 2 CC6.1)' 형식 노출의 1차 출처. references/cross_framework_mapping.json 가 마스터, controls.json 의 cross_mappings 가 박제된 사본.",
+          "additionalProperties": false,
+          "properties": {
+            "iso_27001_2022": { "$ref": "#/$defs/cross_mapping_entry" },
+            "nist_csf_2_0":   { "$ref": "#/$defs/cross_mapping_entry" },
+            "soc_2_tsc":      { "$ref": "#/$defs/cross_mapping_entry" }
+          }
+        }
+      }
+    },
+    "cross_mapping_entry": {
+      "type": "object",
+      "required": ["ids", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "해당 framework 의 control/subcategory/criteria ID 배열 (e.g. ['A.5.16', 'A.5.18'] 또는 ['PR.AA-01']). 빈 배열 = 매핑 부재."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["verified", "candidate", "partial", "none"],
+          "description": "매핑 신뢰도. verified=공식 매핑 또는 명백 semantic 일치, candidate=semantic 유사하나 부분만, partial=일부 측면만, none=매핑 부재."
+        },
+        "note": {
+          "type": "string",
+          "description": "매핑 근거 또는 차이 설명 (선택)."
+        }
+      }
+    },
+    "signal": {
+      "oneOf": [
+        { "$ref": "#/$defs/signal_glob_exists" },
+        { "$ref": "#/$defs/signal_grep_pattern" },
+        { "$ref": "#/$defs/signal_grep_absent" },
+        { "$ref": "#/$defs/signal_file_content" },
+        { "$ref": "#/$defs/signal_manual_review" },
+        { "$ref": "#/$defs/signal_tool_invoke" },
+        { "$ref": "#/$defs/signal_cloud_api" },
+        { "$ref": "#/$defs/signal_cluster_query" }
+      ]
+    },
+    "signal_glob_exists": {
+      "type": "object",
+      "required": ["type", "access_tier", "pattern", "description", "family", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "glob_exists" },
+        "access_tier": { "const": 0 },
+        "pattern": {
+          "type": "string",
+          "description": "Glob 패턴."
+        },
+        "description": { "type": "string" },
+        "family": { "type": "string" },
+        "required": { "type": "boolean" }
+      }
+    },
+    "signal_grep_pattern": {
+      "type": "object",
+      "required": ["type", "access_tier", "pattern", "description", "family", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "grep_pattern" },
+        "access_tier": { "const": 0 },
+        "pattern": {
+          "type": "string",
+          "description": "정규식 패턴 (존재해야 PASS)."
+        },
+        "paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "검색할 경로 glob 배열 (선택)."
+        },
+        "description": { "type": "string" },
+        "family": { "type": "string" },
+        "required": { "type": "boolean" }
+      }
+    },
+    "signal_grep_absent": {
+      "type": "object",
+      "required": ["type", "access_tier", "pattern", "description", "family", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "grep_absent" },
+        "access_tier": { "const": 0 },
+        "pattern": {
+          "type": "string",
+          "description": "정규식 패턴 (부재해야 PASS)."
+        },
+        "paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "검색할 경로 glob 배열 (선택)."
+        },
+        "description": { "type": "string" },
+        "family": { "type": "string" },
+        "required": { "type": "boolean" }
+      }
+    },
+    "signal_file_content": {
+      "type": "object",
+      "required": ["type", "access_tier", "paths", "description", "family", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "file_content" },
+        "access_tier": { "const": 0 },
+        "paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "분석할 파일 경로/glob 배열."
+        },
+        "description": { "type": "string" },
+        "family": { "type": "string" },
+        "required": { "type": "boolean" }
+      }
+    },
+    "signal_manual_review": {
+      "type": "object",
+      "required": ["type", "access_tier", "description", "family", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "manual_review" },
+        "access_tier": { "const": 0 },
+        "description": { "type": "string" },
+        "family": { "type": "string" },
+        "required": { "type": "boolean" }
+      }
+    },
+    "signal_tool_invoke": {
+      "type": "object",
+      "required": ["type", "access_tier", "tool", "rule_id", "description", "family", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "tool_invoke" },
+        "access_tier": { "const": 1 },
+        "tool": {
+          "type": "string",
+          "description": "외부 OSS 도구명 (e.g. tfsec, checkov, trivy, semgrep)."
+        },
+        "rule_id": {
+          "type": "string",
+          "description": "외부 도구의 룰 ID (e.g. AWS-IAM-NO-POLICY-WILDCARDS)."
+        },
+        "description": { "type": "string" },
+        "family": { "type": "string" },
+        "required": { "type": "boolean" }
+      }
+    },
+    "signal_cloud_api": {
+      "type": "object",
+      "required": ["type", "access_tier", "domain", "command", "evaluator", "description", "family", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "cloud_api" },
+        "access_tier": { "const": 2 },
+        "domain": {
+          "type": "string",
+          "enum": ["iam", "network", "logging", "crypto", "backup", "vuln"],
+          "description": "사용자 동의 단위 도메인."
+        },
+        "command": {
+          "type": "string",
+          "description": "클라우드 read-only API 호출 (e.g. 'aws iam get-account-password-policy'). v0.5 이전 backward compat 필드 — 단일 클라우드(=aws) 기준. v0.6+ 멀티클라우드는 commands_by_cloud 사용 권장."
+        },
+        "commands_by_cloud": {
+          "type": "object",
+          "description": "v0.6 신설 — 클라우드별 CLI 명령 매핑. 옵션 필드. 부재 시 'command' 필드를 aws 명령으로 해석. 부재 또는 특정 cloud 키 부재 = 해당 cloud 에서 평가 불가 (consent.cloud_providers 에 있어도 manifest 의 controls.skipped 에 'cloud_not_supported' 사유로 기록).",
+          "additionalProperties": false,
+          "properties": {
+            "aws":   { "type": "string", "description": "AWS CLI 명령 (e.g. 'aws iam get-account-password-policy')." },
+            "gcp":   { "type": "string", "description": "gcloud CLI 명령 (e.g. 'gcloud iam roles list')." },
+            "azure": { "type": "string", "description": "az CLI 명령 (e.g. 'az ad user list --query \"[].userType\"')." }
+          }
+        },
+        "cloud_provider": {
+          "type": "string",
+          "enum": ["aws", "gcp", "azure", "multi"],
+          "default": "aws",
+          "description": "v0.6 신설 — 이 시그널이 평가하는 클라우드. 'multi' = commands_by_cloud 의 모든 키에서 평가 가능. 옵션 필드 — 부재 시 'aws' 가정 (backward compat)."
+        },
+        "evaluator": {
+          "type": "string",
+          "description": "결과 평가식 (자연어 또는 JMESPath/SQL 표현)."
+        },
+        "fallback_tool": {
+          "type": "string",
+          "description": "동일 영역을 커버하는 OSS 도구 (e.g. prowler, scoutsuite)."
+        },
+        "prowler_check_id": {
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            },
+            { "type": "null" }
+          ],
+          "description": "prowler 4.x check ID (단일 또는 AND 평가용 배열). null 은 4.x 에 정확 매핑 없음을 의미. v0.5 이전 backward compat 필드 — 단일 클라우드(=aws) 기준."
+        },
+        "prowler_check_id_by_cloud": {
+          "type": "object",
+          "description": "v0.6 신설 — 클라우드별 prowler check ID 매핑. 옵션 필드. 부재 시 'prowler_check_id' 필드를 aws 룰셋으로 해석. 각 cloud 값은 단일 string / array / null 모두 허용 (prowler_check_id 와 동일 oneOf).",
+          "additionalProperties": false,
+          "properties": {
+            "aws":   { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" }, "minItems": 1 }, { "type": "null" }] },
+            "gcp":   { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" }, "minItems": 1 }, { "type": "null" }] },
+            "azure": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" }, "minItems": 1 }, { "type": "null" }] }
+          }
+        },
+        "prowler_check_id_status": {
+          "type": "string",
+          "enum": ["verified", "candidate"],
+          "description": "prowler_check_id 출처 검증 상태. verified=4.x 소스로 확인, candidate=후보 상태 재확인 필요."
+        },
+        "comment": {
+          "type": "string",
+          "description": "시그널에 대한 자유 형식 주석 (예: 매핑 미확정 사유)."
+        },
+        "description": { "type": "string" },
+        "family": { "type": "string" },
+        "required": { "type": "boolean" }
+      }
+    },
+    "signal_cluster_query": {
+      "type": "object",
+      "required": ["type", "access_tier", "platform", "command", "evaluator", "description", "family", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "cluster_query" },
+        "access_tier": { "const": 3 },
+        "platform": {
+          "type": "string",
+          "enum": ["kubernetes", "helm", "linux_host"],
+          "description": "런타임 플랫폼."
+        },
+        "command": {
+          "type": "string",
+          "description": "쿼리 명령 (e.g. 'kubectl get clusterrolebinding -o json')."
+        },
+        "evaluator": {
+          "type": "string",
+          "description": "결과 평가식."
+        },
+        "fallback_tool": {
+          "type": "string",
+          "description": "동일 영역을 커버하는 OSS 도구 (e.g. kube-bench, kubeaudit)."
+        },
+        "description": { "type": "string" },
+        "family": { "type": "string" },
+        "required": { "type": "boolean" }
+      }
+    }
+  }
+}

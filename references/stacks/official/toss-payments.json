@@ -1,0 +1,76 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "toss-payments",
+    "name": "Toss Payments (토스페이먼츠)",
+    "category": "payment",
+    "vendor": "토스페이먼츠",
+    "homepage": "https://www.tosspayments.com",
+    "data_region_note": "토스페이먼츠는 국내 PG. 카드/계좌 결제 정보는 PG가 PCI-DSS 환경에서 처리. ISMS-P 3.3.2 위탁업무 통지·계약 의무 적용 대상.",
+    "isms_p_relevance": ["2.7.2", "3.2.5", "3.3.2"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "package_dependency", "name": "@tosspayments/payment-sdk" },
+      { "type": "package_dependency", "name": "@tosspayments/payment-widget-sdk" },
+      { "type": "package_dependency", "name": "@tosspayments/tosspayments-sdk" },
+      { "type": "grep_pattern", "pattern": "api\\.tosspayments\\.com|js\\.tosspayments\\.com|tosspayments\\.io", "paths": ["**/*.{ts,tsx,js,jsx,py,java,kt}"] }
+    ]
+  },
+  "signals": [
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "tosspayments_secret_key_inline",
+      "required": true,
+      "description": "토스페이먼츠 시크릿 키 평문 코드 내 하드코딩 부재 — test_sk_/live_sk_ prefix 검출. 환경변수 사용 필수",
+      "pattern": "['\"](test_sk_|live_sk_)[A-Za-z0-9]{20,}['\"]",
+      "paths": ["**/*.{ts,tsx,js,jsx,py,java,kt}", "!**/*.example.*", "!**/*.env.example"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["3.2.5"],
+      "family": "tosspayments_billing_key_storage",
+      "required": true,
+      "description": "billingKey/customerKey DB 컬럼 평문 저장 부재 — 정기결제 식별자는 암호화 저장 권장",
+      "pattern": "(?i)\\b(billing_?key|customer_?key)\\b\\s+(text|varchar|char|String)(?!\\s*encrypted)",
+      "paths": ["**/*.sql", "**/migrations/**", "**/schema.prisma"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.1"],
+      "family": "tosspayments_widget_amount_client_only",
+      "required": false,
+      "description": "토스페이먼츠 위젯 결제 시 클라이언트 측 amount 만 사용 — 서버에서 confirm 시 금액 재검증 필요. 검증 부재 시 위변조 위험",
+      "pattern": "(?i)(confirmPayment|confirm)\\s*\\([^)]*amount\\s*:",
+      "paths": ["**/*.{ts,tsx,js,jsx}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.2"],
+      "family": "external_saas_dependency",
+      "required": false,
+      "description": "토스페이먼츠 위탁 인지 — 처리방침 위탁 매트릭스 및 결제정보 위탁사항 명시 필요",
+      "pattern": "(?i)tosspayments\\.com|@tosspayments/|TOSS_SECRET_KEY",
+      "paths": ["**/*.{ts,tsx,js,jsx,py}", "**/package.json"]
+    }
+  ],
+  "capabilities": {
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["tosspayments_secret_key_inline"]
+    },
+    "encryption_at_rest": {
+      "column_plaintext_absent": ["tosspayments_billing_key_storage"]
+    },
+    "payment_integrity": {
+      "server_side_amount_reverify": ["tosspayments_widget_amount_client_only"]
+    },
+    "third_party_disclosure": {
+      "external_saas_inventory": ["external_saas_dependency"]
+    }
+  }
+}

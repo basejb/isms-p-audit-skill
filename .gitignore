@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local dogfood artifacts (이 Skill 자체를 자기 자신에게 적용한 경우)
+.isms-audit/
+
+# Editor backups
+*.bak
+*.tmp

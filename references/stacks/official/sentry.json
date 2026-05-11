@@ -1,0 +1,82 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "sentry",
+    "name": "Sentry",
+    "category": "external-saas",
+    "vendor": "Functional Software, Inc. (Sentry)",
+    "homepage": "https://sentry.io",
+    "data_region_note": "Sentry 기본 리전 = 미국. SaaS 위탁으로 ISMS-P 3.3.4 국외이전 통제 적용 대상. EU/sentry.io 자체 호스팅 사용 시 별도 검토.",
+    "isms_p_relevance": ["3.1.1", "3.3.4"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "**/sentry.client.config.ts" },
+      { "type": "file_exists", "pattern": "**/sentry.client.config.js" },
+      { "type": "file_exists", "pattern": "**/sentry.server.config.ts" },
+      { "type": "file_exists", "pattern": "**/sentry.server.config.js" },
+      { "type": "file_exists", "pattern": "**/sentry.edge.config.ts" },
+      { "type": "file_exists", "pattern": "**/sentry.edge.config.js" },
+      { "type": "file_exists", "pattern": "**/instrumentation.ts" },
+      { "type": "file_exists", "pattern": "**/instrumentation.js" },
+      { "type": "package_dependency", "name": "@sentry/nextjs" },
+      { "type": "package_dependency", "name": "@sentry/node" },
+      { "type": "package_dependency", "name": "@sentry/react" },
+      { "type": "package_dependency", "name": "@sentry/browser" },
+      { "type": "package_dependency", "name": "@sentry/serverless" }
+    ],
+    "version_capture": {
+      "from": "package.json",
+      "key": "dependencies.@sentry/nextjs"
+    }
+  },
+  "signals": [
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["3.1.1", "3.3.4"],
+      "family": "sentry_pii_transmission",
+      "required": true,
+      "description": "Sentry sendDefaultPii: true 부재 (개인정보 자동 전송 비활성). true 일 경우 사용자 IP/쿠키/요청 본문이 Sentry US 서버로 전송됨.",
+      "pattern": "sendDefaultPii\\s*:\\s*true",
+      "paths": ["**/sentry.{client,server,edge}.config.{ts,js}", "**/instrumentation.{ts,js}", "**/sentry.config.{ts,js}"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["3.1.1"],
+      "family": "sentry_dsn_inline",
+      "required": true,
+      "description": "Sentry DSN 평문 코드 내 하드코딩 부재 (DSN 자체는 PII 가 아니나 시크릿 관리 원칙상 환경변수 사용)",
+      "pattern": "dsn\\s*:\\s*['\"]https://[a-f0-9]{20,}@[a-z0-9.-]+\\.ingest\\.(?:us\\.|de\\.)?sentry\\.io",
+      "paths": ["**/sentry.{client,server,edge}.config.{ts,js}", "**/instrumentation.{ts,js}", "**/sentry.config.{ts,js}", "**/*.{ts,tsx,js,jsx}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.4", "3.1.1"],
+      "family": "external_saas_dependency",
+      "required": false,
+      "description": "외부 SaaS 위탁 인지 — 처리방침 위탁 매트릭스 명시 필요. Sentry 는 미국 본사 — 국외이전 통제 직접 적용.",
+      "pattern": "(?i)@sentry/|sentry\\.io|process\\.env\\.SENTRY_DSN|SentryClient|Sentry\\.init",
+      "paths": ["**/*.{ts,tsx,js,jsx,py}", "**/package.json"]
+    },
+    {
+      "type": "manual_review",
+      "access_tier": 0,
+      "controls": ["3.3.4"],
+      "family": "overseas_transfer_disclosure",
+      "required": true,
+      "description": "Sentry 사용 시 처리방침에 국외이전 항목·수탁국가(미국)·이전 방법·정보주체 권리 명시 — LLM 본문 분석 (v0.4 Sprint 4 의 llm_review type 으로 자동화 예정)"
+    }
+  ],
+  "capabilities": {
+    "secrets_management": {
+      "cloud_credential_inline_absent": ["sentry_dsn_inline"]
+    },
+    "third_party_disclosure": {
+      "external_saas_inventory": ["external_saas_dependency"],
+      "overseas_transfer_disclosure": ["sentry_pii_transmission", "overseas_transfer_disclosure"]
+    }
+  }
+}

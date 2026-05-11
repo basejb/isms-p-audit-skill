@@ -1,0 +1,101 @@
+{
+  "schema_version": "1",
+  "stack": {
+    "id": "azure-functions",
+    "name": "Azure Functions",
+    "category": "hosting",
+    "vendor": "Microsoft Corporation",
+    "homepage": "https://learn.microsoft.com/en-us/azure/azure-functions/",
+    "data_region_note": "Azure Functions 리전 명시 권장. koreacentral / koreasouth 사용 권장. 한국 외 리전 사용 시 ISMS-P 3.3.4 국외이전 통제 적용 대상.",
+    "isms_p_relevance": ["2.6.3", "2.7.2", "2.9.4", "3.3.4"]
+  },
+  "detection": {
+    "any_of": [
+      { "type": "file_exists", "pattern": "host.json" },
+      { "type": "file_exists", "pattern": "**/host.json" },
+      { "type": "file_exists", "pattern": "**/function.json" },
+      { "type": "file_exists", "pattern": "local.settings.json" },
+      { "type": "file_exists", "pattern": "**/local.settings.json" },
+      { "type": "package_dependency", "name": "@azure/functions" },
+      { "type": "package_dependency", "name": "azure-functions-core-tools" }
+    ]
+  },
+  "signals": [
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.6.3"],
+      "family": "azure_func_anonymous_auth",
+      "required": true,
+      "description": "Azure Function HTTP trigger authLevel = anonymous 설정 — 인증 없는 외부 노출 위험",
+      "pattern": "(?i)authLevel\\s*[:=]\\s*['\"]anonymous['\"]|\"authLevel\"\\s*:\\s*\"anonymous\"",
+      "paths": ["**/function.json", "**/*.{ts,tsx,js,jsx,cs,fs}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "azure_func_inline_keys",
+      "required": true,
+      "description": "Azure Function code/host secret (function key, master key, system key) 코드 내 평문 하드코딩 의심",
+      "pattern": "(?i)(function[_-]?key|master[_-]?key|host\\.keys?\\.master)\\s*[:=]\\s*['\"]?[A-Za-z0-9_/+=\\-]{30,}",
+      "paths": ["**/*.{ts,tsx,js,jsx,cs,fs,json}", "!**/local.settings.json", "!**/*.example.*"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "azure_func_local_settings_in_gitignore",
+      "required": false,
+      "description": ".gitignore 에 local.settings.json 등록 부재 — 로컬 시크릿 (AzureWebJobsStorage, application settings) 코드 저장소 노출 위험",
+      "pattern": "local\\.settings\\.json|\\*\\*/local\\.settings\\.json",
+      "paths": [".gitignore", "**/.gitignore"]
+    },
+    {
+      "type": "grep_absent",
+      "access_tier": 0,
+      "controls": ["2.7.2"],
+      "family": "azure_func_managed_identity_used",
+      "required": false,
+      "description": "Azure Function Managed Identity 사용 부재 — connection string 또는 Account Key 직접 사용 시 시크릿 관리 위험",
+      "pattern": "DefaultAzureCredential|ManagedIdentityCredential|managedIdentity|@azure/identity",
+      "paths": ["**/*.{ts,tsx,js,jsx,cs,fs}"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["2.9.4"],
+      "family": "azure_func_app_insights_disabled",
+      "required": false,
+      "description": "Azure Functions host.json 의 logging.applicationInsights 가 명시적으로 비활성 — 운영 감사 로그 누락",
+      "pattern": "['\"]applicationInsights['\"]\\s*:\\s*\\{[^}]*['\"]enabled['\"]\\s*:\\s*false",
+      "paths": ["**/host.json"]
+    },
+    {
+      "type": "grep_pattern",
+      "access_tier": 0,
+      "controls": ["3.3.4"],
+      "family": "azure_func_region_default",
+      "required": false,
+      "description": "Azure Function 배포 location 이 East US / West Europe 등 한국 외 리전 — 국외이전 검토 대상",
+      "pattern": "(?i)location\\s*[:=]\\s*['\"]?(eastus|eastus2|westus|westus2|westus3|centralus|northeurope|westeurope|uksouth|francecentral|germanywestcentral)",
+      "paths": ["**/*.{tf,tfvars,bicep}", "**/azure-pipelines.{yml,yaml}", "**/host.json"]
+    }
+  ],
+  "capabilities": {
+    "application_access_control": {
+      "function_url_authenticated": ["azure_func_anonymous_auth"]
+    },
+    "secrets_management": {
+      "hardcoded_secrets_absent": ["azure_func_inline_keys"],
+      "cloud_credential_inline_absent": ["azure_func_local_settings_in_gitignore"],
+      "kms_or_vault_used": ["azure_func_managed_identity_used"]
+    },
+    "audit_logging": {
+      "cloudtrail_runtime_enabled": ["azure_func_app_insights_disabled"]
+    },
+    "third_party_disclosure": {
+      "overseas_transfer_disclosure": ["azure_func_region_default"]
+    }
+  }
+}
